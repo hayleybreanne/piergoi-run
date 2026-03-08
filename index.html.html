@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pierogi Run</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
+:root{--yellow:#F5C518;--blue:#1A4FA0;--dark:#0d0d0d;--dark2:#181818;--dark3:#222;--mid:#444;--light:#f4f4f0;--white:#fff;--radius:4px;--red:#e74c3c;--green:#27ae60;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Barlow',sans-serif;background:var(--dark);color:var(--light);overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+img{max-width:100%;display:block;}
+input,textarea,select{font-family:'Barlow',sans-serif;}
+
+/* OVERLAY */
+#overlayScreen{position:fixed;inset:0;z-index:9999;background:rgba(13,13,13,0.97);display:flex;align-items:center;justify-content:center;}
+.overlay-box{background:var(--dark2);border:1px solid rgba(245,197,24,0.2);border-radius:8px;padding:48px;width:100%;max-width:440px;}
+.overlay-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:2rem;color:var(--white);text-align:center;margin-bottom:6px;}
+.overlay-logo span{color:var(--yellow);}
+.overlay-sub{text-align:center;font-size:0.85rem;color:rgba(255,255,255,0.4);margin-bottom:32px;}
+.form-group{margin-bottom:18px;}
+.form-label{display:block;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);font-weight:700;margin-bottom:7px;}
+.form-input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:11px 14px;color:var(--white);font-size:0.95rem;transition:border-color 0.2s;}
+.form-input:focus{outline:none;border-color:var(--yellow);}
+.form-input::placeholder{color:rgba(255,255,255,0.25);}
+.btn-full{width:100%;background:var(--yellow);color:var(--dark);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;letter-spacing:2px;text-transform:uppercase;padding:13px;border:none;border-radius:var(--radius);cursor:pointer;transition:background 0.2s;margin-bottom:10px;}
+.btn-full:hover{background:#ffd93d;}
+.btn-full-ghost{background:transparent;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);}
+.btn-full-ghost:hover{background:rgba(255,255,255,0.05);}
+.form-error{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;}
+.step-indicator{text-align:center;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:24px;}
+.step-indicator span{color:var(--yellow);}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--yellow);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-screen{position:fixed;inset:0;background:var(--dark);z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-screen p{color:rgba(255,255,255,0.4);font-size:0.85rem;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;width:100%;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:72px;background:rgba(13,13,13,0.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(245,197,24,0.15);}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.nav-logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:1px;color:var(--white);}
+.nav-logo-text span{color:var(--yellow);}
+.nav-links{display:flex;gap:32px;list-style:none;align-items:center;}
+.nav-links a{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.95rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.7);transition:color 0.2s;cursor:pointer;}
+.nav-links a:hover,.nav-links a.active{color:var(--yellow);}
+.nav-cta{background:var(--yellow);color:var(--dark) !important;padding:8px 20px;border-radius:var(--radius);font-weight:800 !important;}
+.nav-cta:hover{background:#ffd93d !important;}
+.nav-admin-btn{background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);color:rgba(245,197,24,0.6) !important;padding:6px 10px;border-radius:var(--radius);font-size:1rem !important;letter-spacing:0 !important;}
+.nav-admin-btn:hover{background:rgba(245,197,24,0.15);color:var(--yellow) !important;}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+.hamburger span{display:block;width:24px;height:2px;background:var(--white);}
+
+/* PAGES */
+.page{display:none;min-height:100vh;padding-top:72px;}
+.page.active{display:block;}
+.hero{position:relative;height:calc(100vh - 72px);min-height:580px;display:flex;align-items:flex-end;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(135deg,#0a1830 0%,#0d1b3e 40%,#121212 100%);}
+.hero-bg-photo{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:0.35;}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(13,13,13,0.97) 0%,rgba(13,13,13,0.4) 55%,transparent 100%);}
+.hero-content{position:relative;z-index:2;padding:0 48px 80px;max-width:960px;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.3);padding:7px 14px;border-radius:var(--radius);margin-bottom:22px;}
+.hero-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(4rem,11vw,9rem);font-weight:900;line-height:0.88;text-transform:uppercase;color:var(--white);margin-bottom:22px;}
+.hero-title .accent{color:var(--yellow);}
+.hero-subtitle{font-size:clamp(1rem,1.8vw,1.2rem);font-weight:300;color:rgba(255,255,255,0.72);max-width:520px;line-height:1.65;margin-bottom:36px;}
+.hero-meta{display:flex;gap:36px;align-items:center;margin-bottom:40px;flex-wrap:wrap;}
+.hero-meta-item{display:flex;flex-direction:column;}
+.hero-meta-label{font-size:0.65rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--yellow);font-weight:700;}
+.hero-meta-value{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:800;color:var(--white);}
+.hero-divider{width:1px;height:44px;background:rgba(255,255,255,0.18);}
+.btn-group{display:flex;gap:14px;flex-wrap:wrap;}
+.btn-primary{display:inline-block;background:var(--yellow);color:var(--dark);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;letter-spacing:2px;text-transform:uppercase;padding:15px 34px;border-radius:var(--radius);border:none;cursor:pointer;transition:background 0.2s,transform 0.15s;}
+.btn-primary:hover{background:#ffd93d;transform:translateY(-2px);}
+.btn-secondary{display:inline-block;background:transparent;color:var(--white);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1rem;letter-spacing:2px;text-transform:uppercase;padding:15px 34px;border-radius:var(--radius);border:2px solid rgba(255,255,255,0.35);cursor:pointer;transition:border-color 0.2s,color 0.2s;}
+.btn-secondary:hover{border-color:var(--yellow);color:var(--yellow);}
+.btn-outline-yellow{display:inline-block;background:transparent;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:2px;text-transform:uppercase;padding:12px 28px;border-radius:var(--radius);border:2px solid var(--yellow);cursor:pointer;transition:background 0.2s,color 0.2s;}
+.btn-outline-yellow:hover{background:var(--yellow);color:var(--dark);}
+section{padding:100px 48px;}
+.section-tag{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);margin-bottom:14px;}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:900;text-transform:uppercase;line-height:1;color:var(--white);margin-bottom:20px;}
+.section-body{font-size:1.02rem;font-weight:300;line-height:1.8;color:rgba(255,255,255,0.65);max-width:640px;}
+.accent-line{display:block;width:44px;height:3px;background:var(--yellow);margin-bottom:18px;}
+.event-strip{background:var(--yellow);display:flex;justify-content:center;flex-wrap:wrap;}
+.event-strip-item{flex:1 1 180px;padding:32px 28px;border-right:1px solid rgba(0,0,0,0.1);display:flex;flex-direction:column;gap:5px;min-width:140px;}
+.event-strip-item:last-child{border-right:none;}
+.strip-label{font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;font-weight:700;color:rgba(0,0,0,0.45);}
+.strip-value{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:900;color:var(--dark);line-height:1.1;}
+.strip-sub{font-size:0.8rem;color:rgba(0,0,0,0.55);font-weight:400;}
+.home-about{background:var(--dark2);display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;}
+.home-about-img{position:relative;aspect-ratio:4/5;overflow:hidden;border-radius:var(--radius);}
+.photo-placeholder{width:100%;height:100%;background:linear-gradient(135deg,#0d1b3e 0%,#1a2a50 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+.photo-placeholder-icon{font-size:2.5rem;opacity:0.25;}
+.photo-placeholder-label{font-size:0.65rem;letter-spacing:2px;opacity:0.25;text-transform:uppercase;}
+.ru-badge{display:flex;align-items:center;gap:14px;background:rgba(26,79,160,0.15);border:1px solid rgba(26,79,160,0.3);padding:14px 18px;border-radius:var(--radius);margin-top:28px;cursor:pointer;width:fit-content;transition:border-color 0.2s;}
+.ru-badge:hover{border-color:var(--blue);}
+.ru-badge img{height:44px;width:auto;}
+.ru-badge-text{font-size:0.8rem;color:rgba(255,255,255,0.6);line-height:1.4;}
+.ru-badge-text strong{display:block;color:var(--white);font-size:0.9rem;}
+.photo-preview{background:var(--dark3);}
+.photo-preview-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px;flex-wrap:wrap;gap:16px;}
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,220px);gap:8px;}
+.grid-item{overflow:hidden;cursor:pointer;border-radius:var(--radius);background:var(--mid);}
+.grid-item:first-child{grid-column:span 2;grid-row:span 2;}
+.grid-item img,.grid-item .photo-placeholder{width:100%;height:100%;object-fit:cover;transition:transform 0.4s;}
+.grid-item:hover img{transform:scale(1.05);}
+.register-hero{background:var(--dark2);padding:80px 48px;text-align:center;border-bottom:1px solid rgba(245,197,24,0.12);}
+.register-content{padding:80px 48px;max-width:900px;margin:0 auto;}
+.event-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:56px;}
+.info-card{background:var(--dark2);border:1px solid rgba(245,197,24,0.12);padding:26px 28px;border-radius:var(--radius);}
+.info-card-label{font-size:0.62rem;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);font-weight:700;margin-bottom:8px;}
+.info-card-value{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:800;color:var(--white);}
+.info-card-sub{font-size:0.85rem;color:rgba(255,255,255,0.45);margin-top:5px;}
+.runsignup-section{background:var(--dark2);border:1px solid rgba(245,197,24,0.15);border-radius:var(--radius);padding:52px;text-align:center;margin-bottom:60px;}
+.runsignup-section h3{font-family:'Barlow Condensed',sans-serif;font-size:1.9rem;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:12px;}
+.runsignup-section p{color:rgba(255,255,255,0.55);margin-bottom:30px;line-height:1.7;}
+.faq-item{border-bottom:1px solid rgba(255,255,255,0.07);padding:18px 0;cursor:pointer;}
+.faq-q{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;color:var(--white);display:flex;justify-content:space-between;gap:16px;text-transform:uppercase;}
+.faq-q .toggle{color:var(--yellow);flex-shrink:0;}
+.faq-a{display:none;padding-top:12px;font-size:0.92rem;color:rgba(255,255,255,0.55);line-height:1.7;}
+.faq-item.open .faq-a{display:block;}
+.gallery-hero{background:var(--dark2);padding:80px 48px;text-align:center;border-bottom:1px solid rgba(245,197,24,0.12);}
+.gallery-content{padding:80px 48px;}
+.gallery-year-section{margin-bottom:80px;}
+.gallery-year-header{display:flex;align-items:center;gap:24px;margin-bottom:28px;}
+.year-badge{font-family:'Barlow Condensed',sans-serif;font-size:3.5rem;font-weight:900;color:rgba(245,197,24,0.1);line-height:1;}
+.year-line{flex:1;height:1px;background:rgba(255,255,255,0.08);}
+.masonry-grid{columns:4;column-gap:8px;}
+.masonry-item{break-inside:avoid;margin-bottom:8px;overflow:hidden;border-radius:var(--radius);cursor:pointer;}
+.masonry-item img{width:100%;display:block;transition:transform 0.4s;}
+.masonry-item:hover img{transform:scale(1.04);}
+.masonry-placeholder{background:var(--dark3);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;}
+.lightbox{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.94);align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--radius);}
+.lightbox-close{position:absolute;top:24px;right:32px;font-size:1.8rem;color:var(--white);cursor:pointer;background:none;border:none;transition:color 0.2s;}
+.lightbox-close:hover{color:var(--yellow);}
+.about-hero{background:var(--dark2);padding:80px 48px;text-align:center;border-bottom:1px solid rgba(245,197,24,0.12);}
+.about-content{padding:0 48px;}
+.about-section{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;padding:100px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.about-section.reverse{direction:rtl;}
+.about-section.reverse>*{direction:ltr;}
+.about-img{aspect-ratio:4/3;overflow:hidden;border-radius:var(--radius);background:var(--dark3);}
+.impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:60px 0;}
+.impact-card{background:var(--dark2);padding:52px 36px;text-align:center;}
+.impact-number{font-family:'Barlow Condensed',sans-serif;font-size:4rem;font-weight:900;color:var(--yellow);line-height:1;margin-bottom:8px;}
+.impact-label{font-size:0.82rem;color:rgba(255,255,255,0.45);letter-spacing:1px;line-height:1.5;}
+.ru-logo-section{text-align:center;padding:60px 48px;background:var(--dark3);}
+.ru-logo-section img{height:80px;margin:0 auto 20px;filter:brightness(1.1);}
+.ru-logo-section p{color:rgba(255,255,255,0.5);font-size:0.85rem;max-width:500px;margin:0 auto 20px;line-height:1.6;}
+.initiatives-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin:60px 0;}
+.initiative-card{background:var(--dark2);padding:36px;}
+.initiative-icon{font-size:1.8rem;margin-bottom:14px;}
+.initiative-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;text-transform:uppercase;color:var(--yellow);margin-bottom:10px;}
+.initiative-body{font-size:0.9rem;line-height:1.7;color:rgba(255,255,255,0.55);}
+.shop-hero{background:var(--dark2);padding:80px 48px;text-align:center;border-bottom:1px solid rgba(245,197,24,0.12);}
+.shop-content{padding:80px 48px;}
+.shop-coming-soon{text-align:center;padding:72px 48px;background:var(--dark2);border:1px dashed rgba(245,197,24,0.25);border-radius:var(--radius);max-width:600px;margin:0 auto 80px;}
+.coming-soon-badge{display:inline-block;background:rgba(245,197,24,0.08);border:1px solid var(--yellow);color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:3px;font-size:0.75rem;text-transform:uppercase;padding:7px 16px;border-radius:100px;margin-bottom:22px;}
+.shop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.shop-card{background:var(--dark2);border-radius:var(--radius);overflow:hidden;opacity:0.55;}
+.shop-card-img{aspect-ratio:1;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:3rem;}
+.shop-card-body{padding:18px;}
+.shop-card-name{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:4px;}
+.shop-card-price{color:var(--yellow);font-weight:600;font-size:0.95rem;}
+.shop-card-tag{display:inline-block;margin-top:10px;background:rgba(245,197,24,0.08);color:var(--yellow);font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;padding:4px 10px;border-radius:2px;}
+.ukraine-stripe{background:linear-gradient(90deg,#1a4fa0 50%,#F5C518 50%);height:5px;}
+footer{background:#070707;border-top:1px solid rgba(245,197,24,0.08);padding:72px 48px 36px;}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:60px;}
+.footer-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;font-weight:900;color:var(--white);margin-bottom:14px;}
+.footer-logo-text span{color:var(--yellow);}
+.footer-mission{font-size:0.88rem;line-height:1.7;color:rgba(255,255,255,0.42);max-width:280px;margin-bottom:20px;}
+.footer-ru-link{display:flex;align-items:center;gap:10px;margin-bottom:22px;opacity:0.6;transition:opacity 0.2s;width:fit-content;}
+.footer-ru-link:hover{opacity:1;}
+.footer-ru-link img{height:28px;width:auto;filter:brightness(1.2);}
+.footer-ru-link span{font-size:0.75rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;}
+.footer-social{display:flex;gap:10px;}
+.social-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:rgba(255,255,255,0.4);transition:background 0.2s,color 0.2s;}
+.social-btn:hover{background:var(--yellow);color:var(--dark);}
+.footer-col h4{font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase;color:var(--yellow);font-weight:700;margin-bottom:20px;}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.footer-col ul a,.footer-col ul span{font-size:0.87rem;color:rgba(255,255,255,0.42);transition:color 0.2s;}
+.footer-col ul a:hover{color:var(--white);}
+.footer-bottom{border-top:1px solid rgba(255,255,255,0.05);padding-top:28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:0.75rem;color:rgba(255,255,255,0.25);}
+.footer-bottom a{color:rgba(255,255,255,0.3);transition:color 0.2s;}
+.footer-bottom a:hover{color:var(--yellow);}
+.mobile-menu{display:none;position:fixed;top:72px;left:0;right:0;background:var(--dark);border-bottom:1px solid rgba(245,197,24,0.12);z-index:999;padding:20px 40px;flex-direction:column;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.65);padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);transition:color 0.2s;cursor:pointer;}
+.mobile-menu a:hover{color:var(--yellow);}
+
+/* ADMIN */
+#adminPanel{display:none;min-height:100vh;padding-top:72px;background:var(--dark);}
+#adminPanel.active{display:block;}
+.admin-header{background:var(--dark2);border-bottom:1px solid rgba(245,197,24,0.15);padding:28px 48px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.admin-title{font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;color:var(--white);text-transform:uppercase;letter-spacing:1px;}
+.admin-title span{color:var(--yellow);}
+.admin-user-info{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.admin-role-badge{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;padding:4px 10px;border-radius:100px;}
+.role-owner{background:rgba(245,197,24,0.15);color:var(--yellow);border:1px solid rgba(245,197,24,0.4);}
+.role-admin{background:rgba(39,174,96,0.1);color:var(--green);border:1px solid rgba(39,174,96,0.3);}
+.role-manager{background:rgba(26,79,160,0.15);color:#6aa3f5;border:1px solid rgba(26,79,160,0.4);}
+.btn-sm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.8rem;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;border-radius:var(--radius);border:none;cursor:pointer;transition:all 0.2s;}
+.btn-sm-yellow{background:var(--yellow);color:var(--dark);}
+.btn-sm-yellow:hover{background:#ffd93d;}
+.btn-sm-ghost{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1);}
+.btn-sm-ghost:hover{background:rgba(255,255,255,0.12);color:var(--white);}
+.btn-sm-red{background:rgba(231,76,60,0.12);color:var(--red);border:1px solid rgba(231,76,60,0.25);}
+.btn-sm-red:hover{background:rgba(231,76,60,0.22);}
+.admin-tabs{display:flex;gap:2px;background:var(--dark3);padding:8px;overflow-x:auto;}
+.admin-tab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:1.5px;text-transform:uppercase;padding:10px 20px;border:none;background:transparent;color:rgba(255,255,255,0.4);cursor:pointer;border-radius:var(--radius);white-space:nowrap;transition:all 0.2s;}
+.admin-tab:hover{color:var(--white);background:rgba(255,255,255,0.05);}
+.admin-tab.active{background:var(--dark2);color:var(--yellow);}
+.admin-tab:disabled{opacity:0.22;cursor:not-allowed;}
+.admin-body{padding:40px 48px;max-width:1000px;}
+.admin-section{display:none;}
+.admin-section.active{display:block;}
+.admin-card{background:var(--dark2);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius);padding:32px;margin-bottom:24px;}
+.admin-card h3{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.admin-field{margin-bottom:16px;}
+.admin-label{display:block;font-size:0.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);font-weight:700;margin-bottom:7px;}
+.admin-input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:10px 13px;color:var(--white);font-size:0.92rem;transition:border-color 0.2s;}
+.admin-input:focus{outline:none;border-color:var(--yellow);}
+.admin-input::placeholder{color:rgba(255,255,255,0.2);}
+textarea.admin-input{min-height:90px;resize:vertical;line-height:1.6;}
+.admin-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.admin-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.save-bar{position:sticky;bottom:0;background:rgba(13,13,13,0.96);backdrop-filter:blur(10px);border-top:1px solid rgba(245,197,24,0.15);padding:16px 48px;display:flex;align-items:center;gap:16px;}
+.save-status{font-size:0.82rem;color:rgba(255,255,255,0.3);}
+.save-status.saved{color:var(--green);}
+.save-status.unsaved{color:var(--yellow);}
+.faq-admin-item{background:var(--dark3);border-radius:var(--radius);padding:18px;margin-bottom:10px;position:relative;}
+.faq-remove{position:absolute;top:14px;right:14px;background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;font-size:1.1rem;transition:color 0.2s;}
+.faq-remove:hover{color:var(--red);}
+.photo-row{display:flex;gap:10px;align-items:center;background:var(--dark3);padding:12px;border-radius:var(--radius);margin-bottom:8px;}
+.photo-thumb{width:52px;height:52px;object-fit:cover;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);}
+.photo-thumb-empty{width:52px;height:52px;background:var(--mid);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.35;font-size:1.3rem;}
+.upload-label{display:inline-flex;align-items:center;gap:6px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;padding:7px 12px;border-radius:var(--radius);cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;}
+.upload-label:hover{background:rgba(245,197,24,0.15);}
+.upload-label input[type=file]{display:none;}
+.upload-progress{font-size:0.75rem;color:rgba(255,255,255,0.4);margin-left:8px;}
+.member-row{display:flex;align-items:center;gap:12px;background:var(--dark3);padding:14px 16px;border-radius:var(--radius);margin-bottom:8px;flex-wrap:wrap;}
+.member-info{flex:1;}
+.member-name-text{font-size:0.9rem;color:var(--white);}
+.member-email-text{font-size:0.75rem;color:rgba(255,255,255,0.38);}
+.role-select{background:var(--dark2);border:1px solid rgba(255,255,255,0.1);color:var(--white);padding:5px 10px;border-radius:var(--radius);font-size:0.8rem;}
+.invite-box{background:rgba(245,197,24,0.03);border:1px dashed rgba(245,197,24,0.2);border-radius:var(--radius);padding:24px;margin-top:16px;}
+.invite-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;text-transform:uppercase;font-size:0.9rem;color:var(--yellow);margin-bottom:14px;}
+.impact-row{display:grid;grid-template-columns:120px 1fr auto;gap:10px;align-items:center;background:var(--dark3);padding:12px;border-radius:var(--radius);margin-bottom:8px;}
+.toast{position:fixed;bottom:32px;right:32px;background:var(--dark2);border:1px solid rgba(245,197,24,0.3);color:var(--white);padding:14px 22px;border-radius:var(--radius);font-size:0.9rem;z-index:9998;transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:rgba(39,174,96,0.5);color:var(--green);}
+.toast.error{border-color:rgba(231,76,60,0.5);color:var(--red);}
+.firebase-config-box{background:rgba(245,197,24,0.04);border:1px solid rgba(245,197,24,0.2);border-radius:var(--radius);padding:28px;margin-bottom:24px;}
+.firebase-config-box h3{font-family:'Barlow Condensed',sans-serif;font-weight:800;text-transform:uppercase;color:var(--yellow);font-size:1rem;margin-bottom:8px;}
+.firebase-config-box p{font-size:0.83rem;color:rgba(255,255,255,0.45);line-height:1.6;margin-bottom:16px;}
+.config-field{margin-bottom:10px;}
+.config-label{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);font-weight:700;display:block;margin-bottom:5px;}
+
+@media(max-width:900px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .hamburger{display:flex;}
+  section{padding:60px 20px;}
+  .hero-content{padding:0 20px 48px;}
+  .home-about{grid-template-columns:1fr;gap:40px;}
+  .photo-grid{grid-template-columns:repeat(2,1fr);grid-template-rows:auto;}
+  .photo-grid .grid-item:first-child{grid-column:span 2;grid-row:span 1;}
+  .about-section{grid-template-columns:1fr;gap:40px;}
+  .about-section.reverse{direction:ltr;}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:36px;}
+  .shop-grid{grid-template-columns:repeat(2,1fr);}
+  .impact-grid{grid-template-columns:1fr;gap:2px;}
+  .masonry-grid{columns:2;}
+  .event-info-grid{grid-template-columns:1fr;}
+  .register-content{padding:60px 20px;}
+  footer{padding:48px 20px 24px;}
+  .gallery-content,.about-content,.shop-content{padding:60px 20px;}
+  .initiatives-grid{grid-template-columns:1fr;}
+  .ru-logo-section{padding:48px 20px;}
+  .admin-body{padding:24px 20px;}
+  .admin-header{padding:20px;}
+  .admin-grid-2,.admin-grid-3{grid-template-columns:1fr;}
+  .save-bar{padding:14px 20px;}
+  .impact-row{grid-template-columns:1fr 1fr auto;}
+}
+@media(max-width:580px){
+  .event-strip{flex-direction:column;}
+  .footer-grid{grid-template-columns:1fr;}
+  .shop-grid{grid-template-columns:1fr 1fr;}
+  .hero-divider{display:none;}
+  .btn-group{flex-direction:column;max-width:260px;}
+}
+</style>
+</head>
+<body>
+
+<!-- FIREBASE CONFIG SCREEN -->
+<div id="firebaseConfigScreen" style="position:fixed;inset:0;z-index:99999;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--dark2);border:1px solid rgba(245,197,24,0.25);border-radius:8px;padding:40px;width:100%;max-width:560px;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.8rem;color:var(--white);text-align:center;margin-bottom:6px;">🥟 <span style="color:var(--yellow);">Pierogi</span> Run</div>
+    <div style="text-align:center;font-size:0.85rem;color:rgba(255,255,255,0.35);margin-bottom:28px;">One-time Firebase setup — paste your project credentials below.</div>
+    <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);background:var(--dark3);padding:14px;border-radius:var(--radius);margin-bottom:22px;line-height:1.7;">
+      Go to <strong style="color:rgba(255,255,255,0.7);">Firebase Console → Project Settings → Your Apps → Web App</strong> and copy each value from your <code style="color:var(--yellow);">firebaseConfig</code> object.
+    </div>
+    <div class="admin-grid-2">
+      <div class="config-field"><label class="config-label">API Key</label><input class="form-input" id="fc-apiKey" placeholder="AIzaSy..."></div>
+      <div class="config-field"><label class="config-label">Auth Domain</label><input class="form-input" id="fc-authDomain" placeholder="project.firebaseapp.com"></div>
+      <div class="config-field"><label class="config-label">Project ID</label><input class="form-input" id="fc-projectId" placeholder="pierogi-run"></div>
+      <div class="config-field"><label class="config-label">Storage Bucket</label><input class="form-input" id="fc-storageBucket" placeholder="project.appspot.com"></div>
+      <div class="config-field"><label class="config-label">Messaging Sender ID</label><input class="form-input" id="fc-messagingSenderId" placeholder="123456789"></div>
+      <div class="config-field"><label class="config-label">App ID</label><input class="form-input" id="fc-appId" placeholder="1:123:web:abc..."></div>
+    </div>
+    <div id="fcErr" style="color:var(--red);font-size:0.82rem;margin:10px 0;display:none;"></div>
+    <button class="btn-full" onclick="saveFirebaseConfig()" style="margin-top:8px;">Connect to Firebase →</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loadingScreen" class="loading-screen" style="display:none;">
+  <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+  <p id="loadingMsg">Loading...</p>
+</div>
+
+<!-- OVERLAY: LOGIN / SETUP -->
+<div id="overlayScreen" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(13,13,13,0.97);display:none;align-items:center;justify-content:center;">
+  <div id="setupWizard" class="overlay-box" style="display:none;">
+    <div class="overlay-logo">🥟 <span>Pierogi</span> Run</div>
+    <div class="overlay-sub">Create the first Owner account.</div>
+    <div id="setupStep1">
+      <div class="step-indicator">Step <span>1</span> of 2</div>
+      <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" id="s-name" placeholder="e.g. Hayley Smith"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="s-email" type="email" placeholder="you@example.com"></div>
+      <div id="setupErr1" class="form-error"></div>
+      <button class="btn-full" onclick="setupStep1Next()">Continue →</button>
+    </div>
+    <div id="setupStep2" style="display:none;">
+      <div class="step-indicator">Step <span>2</span> of 2</div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="s-pass" type="password" placeholder="Min 8 characters"></div>
+      <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" id="s-pass2" type="password"></div>
+      <div id="setupErr2" class="form-error"></div>
+      <button class="btn-full" onclick="setupFinish()">Create Account →</button>
+    </div>
+  </div>
+  <div id="loginBox" class="overlay-box" style="display:none;">
+    <div class="overlay-logo">🥟 <span>Pierogi</span> Run</div>
+    <div class="overlay-sub">Admin Panel</div>
+    <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="l-email" type="email"></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="l-pass" type="password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="loginErr" class="form-error"></div>
+    <button class="btn-full" onclick="doLogin()">Sign In →</button>
+    <button class="btn-full btn-full-ghost" onclick="hideOverlay()">← Back to Site</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <div class="nav-logo-text">🥟 <span>Pierogi</span> Run</div>
+  </div>
+  <ul class="nav-links">
+    <li><a onclick="showPage('home')" id="nav-home">Home</a></li>
+    <li><a onclick="showPage('register')" id="nav-register">Register</a></li>
+    <li><a onclick="showPage('gallery')" id="nav-gallery">Gallery</a></li>
+    <li><a onclick="showPage('about')" id="nav-about">About</a></li>
+    <li><a onclick="showPage('shop')" id="nav-shop">Shop</a></li>
+    <li><a onclick="showPage('register')" class="nav-cta">Register Now</a></li>
+    <li><a onclick="handleAdminClick()" class="nav-admin-btn" title="Admin">⚙</a></li>
+  </ul>
+  <button class="hamburger" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a onclick="showPage('home');toggleMobileMenu()">Home</a>
+  <a onclick="showPage('register');toggleMobileMenu()">Register</a>
+  <a onclick="showPage('gallery');toggleMobileMenu()">Gallery</a>
+  <a onclick="showPage('about');toggleMobileMenu()">About</a>
+  <a onclick="showPage('shop');toggleMobileMenu()">Shop</a>
+  <a onclick="handleAdminClick();toggleMobileMenu()" style="color:rgba(245,197,24,0.5);font-size:0.9rem;">⚙</a>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-bg"><img class="hero-bg-photo" id="heroBgImg" src="" alt="" style="display:none"></div>
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-tag">🇺🇦 Annual Charity Race · pierogi.run</div>
+      <h1 class="hero-title">Pierogi<br><span class="accent">Run</span></h1>
+      <p class="hero-subtitle" id="hero-tagline"></p>
+      <div class="hero-meta">
+        <div class="hero-meta-item"><span class="hero-meta-label">Date</span><span class="hero-meta-value" id="hero-date"></span></div>
+        <div class="hero-divider"></div>
+        <div class="hero-meta-item"><span class="hero-meta-label">Location</span><span class="hero-meta-value" id="hero-location"></span></div>
+        <div class="hero-divider"></div>
+        <div class="hero-meta-item"><span class="hero-meta-label">Distances</span><span class="hero-meta-value" id="hero-distances"></span></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn-primary" onclick="showPage('register')">Register Now</button>
+        <button class="btn-secondary" onclick="showPage('gallery')">View Photos</button>
+      </div>
+    </div>
+  </div>
+  <div class="event-strip">
+    <div class="event-strip-item"><span class="strip-label">Date</span><span class="strip-value" id="strip-date"></span><span class="strip-sub" id="strip-time"></span></div>
+    <div class="event-strip-item"><span class="strip-label">Location</span><span class="strip-value" id="strip-location"></span></div>
+    <div class="event-strip-item"><span class="strip-label">Distances</span><span class="strip-value" id="strip-distances"></span></div>
+    <div class="event-strip-item"><span class="strip-label">Registration Closes</span><span class="strip-value" id="strip-deadline"></span></div>
+    <div class="event-strip-item"><span class="strip-label">Benefiting</span><span class="strip-value">Ukraine 🇺🇦</span><span class="strip-sub">Regenerate Ukraine</span></div>
+  </div>
+  <section class="home-about">
+    <div class="home-about-img"><div class="photo-placeholder"><span class="photo-placeholder-icon">📸</span><span class="photo-placeholder-label">Race photo</span></div></div>
+    <div>
+      <span class="section-tag">About the Event</span><span class="accent-line"></span>
+      <h2 class="section-title">More Than<br>a Race</h2>
+      <p class="section-body" id="home-short-desc"></p>
+      <div class="ru-badge" onclick="showPage('about')">
+        <img id="home-ru-logo" src="" alt="Regenerate Ukraine" onerror="this.style.display='none'">
+        <div class="ru-badge-text"><strong>Regenerate Ukraine</strong>501(c)(3) Nonprofit · regenerateukraine.org</div>
+      </div>
+      <br><button class="btn-secondary" onclick="showPage('about')">Learn More →</button>
+    </div>
+  </section>
+  <section class="photo-preview">
+    <div class="photo-preview-header">
+      <div><span class="section-tag">Gallery</span><h2 class="section-title">Race Day Moments</h2></div>
+      <button class="btn-secondary" onclick="showPage('gallery')">View Full Gallery →</button>
+    </div>
+    <div class="photo-grid" id="homePhotoGrid"></div>
+  </section>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="register-hero">
+    <span class="section-tag">Join the Race</span>
+    <h1 class="section-title">Register for <span style="color:var(--yellow)" id="reg-title"></span></h1>
+    <p class="section-body" style="margin:0 auto;text-align:center;">Ready to run for Ukraine? Sign up below.</p>
+  </div>
+  <div class="register-content">
+    <div class="event-info-grid">
+      <div class="info-card"><div class="info-card-label">Event Date</div><div class="info-card-value" id="reg-date"></div></div>
+      <div class="info-card"><div class="info-card-label">Location</div><div class="info-card-value" id="reg-location"></div></div>
+      <div class="info-card"><div class="info-card-label">Race Options</div><div class="info-card-value" id="reg-distances"></div></div>
+      <div class="info-card"><div class="info-card-label">Registration Deadline</div><div class="info-card-value" id="reg-deadline"></div><div class="info-card-sub">Race-day registration may be available</div></div>
+    </div>
+    <div class="runsignup-section">
+      <h3>Ready to Register?</h3>
+      <p>Registration is handled securely through RunSignup.</p>
+      <a id="runsignup-btn" href="#" target="_blank" class="btn-primary">Register on RunSignup →</a>
+    </div>
+    <div><span class="section-tag">FAQ</span><h2 class="section-title" style="margin-bottom:32px;">Common Questions</h2><div id="faqList"></div></div>
+  </div>
+</div>
+
+<!-- GALLERY -->
+<div class="page" id="page-gallery">
+  <div class="gallery-hero"><span class="section-tag">Photo Gallery</span><h1 class="section-title">Race Day Memories</h1></div>
+  <div class="gallery-content" id="galleryContent"></div>
+</div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about">
+  <div class="about-hero"><span class="section-tag">Our Story</span><h1 class="section-title">About Pierogi Run &<br><span style="color:var(--yellow)">Regenerate Ukraine</span></h1></div>
+  <div class="about-content">
+    <div class="about-section">
+      <div class="about-img"><div class="photo-placeholder" style="height:100%;min-height:320px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;"><span class="photo-placeholder-icon">📸</span></div></div>
+      <div>
+        <span class="section-tag">What is Pierogi Run?</span><span class="accent-line"></span>
+        <h2 class="section-title">Community,<br>Culture &<br>Pierogis</h2>
+        <p class="section-body" id="about-pr-text"></p>
+        <br><br><button class="btn-secondary" onclick="showPage('register')">Register for This Year →</button>
+      </div>
+    </div>
+    <div class="about-section reverse">
+      <div class="about-img"><div class="photo-placeholder" style="height:100%;min-height:320px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;"><img id="about-ru-logo-large" src="" alt="" style="max-height:80px;width:auto;opacity:0.7;" onerror="this.style.display='none'"></div></div>
+      <div>
+        <span class="section-tag">Our Partner</span><span class="accent-line"></span>
+        <h2 class="section-title">Regenerate<br>Ukraine</h2>
+        <p class="section-body" id="about-ru-mission"></p>
+        <br><br><a id="about-ru-link" href="#" target="_blank" class="btn-outline-yellow">Visit regenerateukraine.org →</a>
+      </div>
+    </div>
+  </div>
+  <div class="initiatives-grid" id="initiativesGrid"></div>
+  <div class="impact-grid" id="impactGrid"></div>
+  <div class="ru-logo-section">
+    <img id="about-ru-logo-footer" src="" alt="" onerror="this.style.display='none'">
+    <p id="about-ru-address"></p>
+    <a href="https://givebutter.com/regenerate-ukraine-inc" target="_blank" class="btn-primary">Donate to Regenerate Ukraine →</a>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div class="page" id="page-shop">
+  <div class="shop-hero"><span class="section-tag">Official Merchandise</span><h1 class="section-title">Pierogi Run<br><span style="color:var(--yellow)">Shop</span></h1></div>
+  <div class="shop-content">
+    <div class="shop-coming-soon"><span class="coming-soon-badge">🛍 Coming Soon</span><h2 class="section-title" style="font-size:2.5rem;margin-bottom:16px;">Shop is Under Construction</h2></div>
+    <div><span class="section-tag">Preview</span><h2 class="section-title" style="margin-bottom:32px;">Upcoming Merchandise</h2><div class="shop-grid" id="shopGrid"></div></div>
+  </div>
+</div>
+
+<div class="ukraine-stripe" id="ukraineStripe"></div>
+<footer id="siteFooter">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo-text">🥟 <span>Pierogi</span> Run</div>
+      <p class="footer-mission">An annual charity road race celebrating Ukrainian culture and community, benefiting Regenerate Ukraine's refugee relief programs.</p>
+      <a id="footer-ru-badge" href="#" target="_blank" class="footer-ru-link"><img id="footer-ru-logo" src="" alt="" onerror="this.style.display='none'"><span>regenerateukraine.org</span></a>
+      <div class="footer-social" id="footerSocial"></div>
+    </div>
+    <div class="footer-col"><h4>Navigate</h4><ul><li><a onclick="showPage('home')">Home</a></li><li><a onclick="showPage('register')">Register</a></li><li><a onclick="showPage('gallery')">Gallery</a></li><li><a onclick="showPage('about')">About</a></li><li><a onclick="showPage('shop')">Shop</a></li></ul></div>
+    <div class="footer-col"><h4>Race Info</h4><ul><li><span id="footer-date"></span></li><li><span id="footer-location"></span></li><li><a onclick="showPage('register')">Register Now</a></li></ul></div>
+    <div class="footer-col"><h4>Contact</h4><ul><li><a id="footer-email" href="#">Email Pierogi Run</a></li><li><a id="footer-ru-email" href="#">Email Regenerate Ukraine</a></li><li><span id="footer-ru-address"></span></li><li><a href="https://givebutter.com/regenerate-ukraine-inc" target="_blank" style="color:var(--yellow)">Donate →</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span id="footer-copyright"></span><span>pierogi.run · <a id="footer-ru-link2" href="#" target="_blank">regenerateukraine.org</a></span></div>
+</footer>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <div class="admin-header">
+    <div><div class="admin-title">⚙ <span>Admin</span> Panel</div><div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:4px;">Pierogi Run · Site Management</div></div>
+    <div class="admin-user-info">
+      <span id="adminUserName" style="font-size:0.85rem;color:rgba(255,255,255,0.5);"></span>
+      <span id="adminRoleBadge" class="admin-role-badge"></span>
+      <button class="btn-sm btn-sm-ghost" onclick="closeAdminPanel()">← Back to Site</button>
+      <button class="btn-sm btn-sm-ghost" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchTab('event')" id="tab-event">📅 Event</button>
+    <button class="admin-tab" onclick="switchTab('text')" id="tab-text">✏️ Text</button>
+    <button class="admin-tab" onclick="switchTab('photos')" id="tab-photos">📸 Gallery</button>
+    <button class="admin-tab" onclick="switchTab('contact')" id="tab-contact">📬 Contact</button>
+    <button class="admin-tab" onclick="switchTab('faq')" id="tab-faq">❓ FAQ</button>
+    <button class="admin-tab" onclick="switchTab('security')" id="tab-security">🔐 Security</button>
+  </div>
+  <div class="admin-body">
+
+    <div class="admin-section active" id="section-event">
+      <div class="admin-card"><h3>Race Details</h3>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">Event Name</label><input class="admin-input" id="a-eventName"></div>
+          <div class="admin-field"><label class="admin-label">Year</label><input class="admin-input" id="a-eventYear"></div>
+        </div>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">Event Date</label><input class="admin-input" id="a-eventDate"></div>
+          <div class="admin-field"><label class="admin-label">Start Time</label><input class="admin-input" id="a-eventTime"></div>
+        </div>
+        <div class="admin-field"><label class="admin-label">Location</label><input class="admin-input" id="a-eventLocation"></div>
+        <div class="admin-field"><label class="admin-label">Distances (comma-separated)</label><input class="admin-input" id="a-raceDistances"></div>
+        <div class="admin-field"><label class="admin-label">Registration Deadline</label><input class="admin-input" id="a-regDeadline"></div>
+        <div class="admin-field"><label class="admin-label">Hero Background Photo</label>
+          <div class="photo-row">
+            <div id="heroBgThumb" class="photo-thumb-empty">🖼️</div>
+            <input class="admin-input" id="a-heroBg" placeholder="Paste URL or upload →" style="flex:1;">
+            <label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadToStorage(this,'heroBg','heroBgThumb','a-heroBg')"></label>
+          </div>
+        </div>
+      </div>
+      <div class="admin-card"><h3>Impact Stats</h3><div id="impactAdminList"></div><button class="btn-sm btn-sm-ghost" onclick="addImpactItem()" style="margin-top:8px;">+ Add Stat</button></div>
+    </div>
+
+    <div class="admin-section" id="section-text">
+      <div class="admin-card"><h3>Home Page</h3>
+        <div class="admin-field"><label class="admin-label">Hero Tagline</label><input class="admin-input" id="a-tagline"></div>
+        <div class="admin-field"><label class="admin-label">Short Description</label><textarea class="admin-input" id="a-shortDesc"></textarea></div>
+      </div>
+      <div class="admin-card"><h3>About Page</h3>
+        <div class="admin-field"><label class="admin-label">What is Pierogi Run?</label><textarea class="admin-input" id="a-aboutPR" style="min-height:120px;"></textarea></div>
+        <div class="admin-field"><label class="admin-label">Regenerate Ukraine Mission</label><textarea class="admin-input" id="a-ruMission" style="min-height:120px;"></textarea></div>
+      </div>
+      <div class="admin-card"><h3>RU Initiatives</h3><div id="initiativesAdminList"></div><button class="btn-sm btn-sm-ghost" onclick="addInitiative()" style="margin-top:8px;">+ Add Initiative</button></div>
+    </div>
+
+    <div class="admin-section" id="section-photos">
+      <div class="admin-card"><h3>Gallery Photos by Year</h3>
+        <p style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:20px;line-height:1.6;">Upload from your device or paste a URL. Photos are stored in Firebase Storage.</p>
+        <div id="photoYearSections"></div>
+        <button class="btn-sm btn-sm-ghost" onclick="addPhotoYear()" style="margin-top:12px;">+ Add Year</button>
+      </div>
+      <div class="admin-card"><h3>Home Preview Photos (up to 5)</h3><div id="previewPhotoList"></div></div>
+    </div>
+
+    <div class="admin-section" id="section-contact">
+      <div class="admin-card"><h3>Contact Info</h3>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">Pierogi Run Email</label><input class="admin-input" id="a-contactEmail"></div>
+          <div class="admin-field"><label class="admin-label">Regenerate Ukraine Email</label><input class="admin-input" id="a-ruEmail"></div>
+        </div>
+        <div class="admin-field"><label class="admin-label">RU Address</label><input class="admin-input" id="a-ruAddress"></div>
+      </div>
+      <div class="admin-card"><h3>External Links</h3>
+        <div class="admin-field"><label class="admin-label">RunSignup URL</label><input class="admin-input" id="a-runsignupURL"></div>
+        <div class="admin-field"><label class="admin-label">RunSignup Button Text</label><input class="admin-input" id="a-runsignupBtn"></div>
+        <div class="admin-field"><label class="admin-label">Regenerate Ukraine Website</label><input class="admin-input" id="a-ruURL"></div>
+        <div class="admin-field"><label class="admin-label">RU Logo URL</label><input class="admin-input" id="a-ruLogo"></div>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">Facebook URL</label><input class="admin-input" id="a-facebook"></div>
+          <div class="admin-field"><label class="admin-label">Instagram URL</label><input class="admin-input" id="a-instagram"></div>
+        </div>
+        <div class="admin-field"><label class="admin-label">Copyright Year</label><input class="admin-input" id="a-copyrightYear"></div>
+      </div>
+    </div>
+
+    <div class="admin-section" id="section-faq">
+      <div class="admin-card"><h3>FAQ</h3><div id="faqAdminList"></div><button class="btn-sm btn-sm-ghost" onclick="addFaqItem()" style="margin-top:12px;">+ Add Question</button></div>
+    </div>
+
+    <div class="admin-section" id="section-security">
+      <div class="admin-card"><h3>My Account</h3>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">Display Name</label><input class="admin-input" id="a-myName"></div>
+          <div class="admin-field"><label class="admin-label">Email</label><input class="admin-input" id="a-myEmail"></div>
+        </div>
+        <div class="admin-grid-2">
+          <div class="admin-field"><label class="admin-label">New Password <span style="opacity:0.35;font-weight:400;">(leave blank to keep)</span></label><input class="admin-input" id="a-myPass" type="password"></div>
+          <div class="admin-field"><label class="admin-label">Confirm Password</label><input class="admin-input" id="a-myPass2" type="password"></div>
+        </div>
+        <button class="btn-sm btn-sm-yellow" onclick="saveMyAccount()">Save Account</button>
+        <div id="myAccountMsg" style="font-size:0.82rem;margin-top:10px;display:none;"></div>
+      </div>
+      <div class="admin-card" id="membersCard"><h3>Team Members</h3>
+        <p style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:18px;line-height:1.7;">
+          <strong style="color:rgba(255,255,255,0.65);">Owner</strong> — Full access<br>
+          <strong style="color:rgba(255,255,255,0.65);">Admin</strong> — Edit text, photos, FAQ<br>
+          <strong style="color:rgba(255,255,255,0.65);">Manager</strong> — Event dates &amp; location only
+        </p>
+        <div id="membersList"></div>
+        <div class="invite-box" id="inviteBox">
+          <div class="invite-title">Invite New Member</div>
+          <div class="admin-grid-3">
+            <div class="admin-field"><label class="admin-label">Name</label><input class="admin-input" id="inv-name"></div>
+            <div class="admin-field"><label class="admin-label">Email</label><input class="admin-input" id="inv-email" type="email"></div>
+            <div class="admin-field"><label class="admin-label">Role</label>
+              <select class="admin-input role-select" id="inv-role" style="width:100%;">
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+                <option value="owner">Owner</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field"><label class="admin-label">Temporary Password</label><input class="admin-input" id="inv-pass" type="password"></div>
+          <div id="inviteErr" class="form-error"></div>
+          <button class="btn-sm btn-sm-yellow" onclick="inviteMember()">Add Member →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="save-bar">
+    <button class="btn-sm btn-sm-yellow" onclick="saveAll()">💾 Save All Changes</button>
+    <button class="btn-sm btn-sm-ghost" onclick="renderPublicSite()">👁 Preview</button>
+    <span class="save-status" id="saveStatus">All changes saved.</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDKs -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateEmail, updatePassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+
+// ── DEFAULTS ─────────────────────────────────────────────
+const DEFAULTS={
+  eventName:"Pierogi Run",eventYear:"2025",eventDate:"Saturday, October 18, 2025",
+  eventLocation:"Erie, Pennsylvania",eventTime:"9:00 AM",
+  raceDistances:"5K Run/Walk, 10K Run",registrationDeadline:"October 10, 2025",
+  tagline:"Run for Ukraine. Fuel with pierogis.",heroBgPhoto:"",
+  shortDescription:"Join runners and walkers of all ages for a community fun run celebrating Ukrainian culture and supporting Regenerate Ukraine's mission to empower Ukrainian refugees. Every mile means something — and every finisher earns pierogis at the finish line.",
+  runSignupURL:"https://runsignup.com/Race/YourRaceLink",runSignupButtonText:"Register on RunSignup",
+  contactEmail:"hello@pierogi.run",regenerateUkraineURL:"https://www.regenerateukraine.org/",
+  regenerateUkraineContact:"info@regenerateukraine.com",regenerateUkraineAddress:"241 Main St., Johnson City, NY",
+  ruLogoURL:"https://static.wixstatic.com/media/420d05_1270247ccfeb454d9c376a5fc7b88911~mv2.png/v1/crop/x_0,y_301,w_2732,h_1152/fill/w_609,h_253,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/420d05_1270247ccfeb454d9c376a5fc7b88911~mv2.png",
+  ruMission:"Regenerate Ukraine is a welcoming volunteer organization that facilitates cross-cultural exchange to invest, enact and envision the future of a free, sustainable, and prosperous Ukraine. A registered 501(c)(3) nonprofit organization.",
+  aboutPierogiRun:"Pierogi Run is an annual community road race that celebrates Ukrainian heritage and raises vital funds for Ukrainian refugees through Regenerate Ukraine. Founded with love for food, running, and community, Pierogi Run brings together families, athletes, and supporters from across the region for a memorable morning of movement and meaning.",
+  social:{facebook:"https://www.facebook.com/p/Regenerate-Ukraine-Inc-61578009724615/",instagram:"https://www.instagram.com/regenerate_ukraine_inc/"},
+  impact:[{number:"500+",label:"Runners & Walkers Each Year"},{number:"$40K+",label:"Raised for Ukrainian Refugees"},{number:"200+",label:"Families Supported"}],
+  ruInitiatives:[
+    {icon:"🗣️",title:"Language Exchange",body:"English as a New Language training for immigrants and displaced people, plus monthly Bilingual BBQs."},
+    {icon:"🎨",title:"Arts & Culture",body:"Hosting Ukrainian artists, musicians, and workshops on pysanky Easter eggs, vinky flower wreaths, and other traditions."},
+    {icon:"📚",title:"Education & Advocacy",body:"Bridging stakeholders to learn about and advocate for Ukraine at community events, summits, and workshops."},
+    {icon:"🩺",title:"Direct Aid",body:"Working with trusted partners to deliver critical humanitarian aid directly to those who need it most."}
+  ],
+  faq:[
+    {q:"Is the event family friendly?",a:"Absolutely! Pierogi Run welcomes runners and walkers of all ages. Strollers and leashed dogs are welcome."},
+    {q:"What's included with registration?",a:"All participants receive a race bib, finisher medal, and pierogis at the finish line."},
+    {q:"Are pierogis actually served?",a:"Yes! Fresh pierogis are served at the finish line. It's the best part of the race."},
+    {q:"Can I participate without running?",a:"Yes! The 5K includes a walk option. You can also volunteer or donate."},
+    {q:"Where does my registration fee go?",a:"All net proceeds benefit Regenerate Ukraine and their programs supporting Ukrainian refugees."},
+    {q:"Is my donation tax-deductible?",a:"Yes! Regenerate Ukraine is a registered 501(c)(3) nonprofit."}
+  ],
+  photos:{},
+  previewPhotos:[{src:""},{src:""},{src:""},{src:""},{src:""}],
+  copyrightYear:"2025"
+};
+const SHOP_ITEMS=[{name:"Race Tee",emoji:"👕",price:"$28"},{name:"Hoodie",emoji:"🧥",price:"$58"},{name:"Sticker Pack",emoji:"⭐",price:"$8"},{name:"Finisher Medal",emoji:"🏅",price:"$15"}];
+
+// ── FIREBASE STATE ───────────────────────────────────────
+let app, auth, db, storage;
+let cfg = JSON.parse(JSON.stringify(DEFAULTS));
+let currentUser = null;
+let currentUserDoc = null;
+
+// ── CONFIG SCREEN ────────────────────────────────────────
+const FC_KEY = 'pr_firebase_config';
+
+function getSavedConfig(){
+  try{ return JSON.parse(localStorage.getItem(FC_KEY)); }catch(e){ return null; }
+}
+
+async function saveFirebaseConfig(){
+  const get = id => document.getElementById(id).value.trim();
+  const fc = {
+    apiKey: get('fc-apiKey'), authDomain: get('fc-authDomain'),
+    projectId: get('fc-projectId'), storageBucket: get('fc-storageBucket'),
+    messagingSenderId: get('fc-messagingSenderId'), appId: get('fc-appId')
+  };
+  const err = document.getElementById('fcErr');
+  if(Object.values(fc).some(v=>!v)){ err.textContent='Please fill in all fields.'; err.style.display='block'; return; }
+  err.style.display='none';
+  localStorage.setItem(FC_KEY, JSON.stringify(fc));
+  document.getElementById('firebaseConfigScreen').style.display='none';
+  await initFirebase(fc);
+}
+window.saveFirebaseConfig = saveFirebaseConfig;
+
+async function initFirebase(fc){
+  showLoading('Connecting to Firebase...');
+  try {
+    app = initializeApp(fc);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    // expose to window for admin functions
+    window._fb = { auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateEmail, updatePassword, doc, getDoc, setDoc, collection, getDocs, deleteDoc, ref, uploadBytes, getDownloadURL, deleteObject };
+    await bootApp();
+  } catch(e) {
+    hideLoading();
+    // Only show config screen for invalid config errors, not permissions
+    if(e.message && (e.message.includes('invalid-api-key') || e.message.includes('app/invalid'))) {
+      document.getElementById('firebaseConfigScreen').style.display='flex';
+      const err = document.getElementById('fcErr');
+      err.textContent = 'Firebase connection failed: ' + e.message;
+      err.style.display = 'block';
+    } else {
+      showToast('Firebase error: ' + e.message, 'error');
+      console.error('Firebase init error:', e);
+      renderPublicSite();
+    }
+  }
+}
+
+async function bootApp(){
+  showLoading('Loading site...');
+  // Load config from Firestore — fail gracefully
+  try {
+    const snap = await getDoc(doc(db,'site','config'));
+    if(snap.exists()) cfg = {...DEFAULTS, ...snap.data()};
+    else console.log('No config in Firestore yet, using defaults.');
+  } catch(e){
+    console.warn('Config load failed, using defaults:', e.message);
+  }
+
+  renderPublicSite();
+  hideLoading();
+
+  // Auth state listener
+  onAuthStateChanged(auth, async user => {
+    if(user){
+      try {
+        const uSnap = await getDoc(doc(db,'users', user.uid));
+        if(uSnap.exists()){
+          currentUserDoc = uSnap.data();
+          currentUser = { uid: user.uid, email: user.email, ...currentUserDoc };
+        }
+      } catch(e){ console.warn('User doc load failed:', e.message); }
+    } else {
+      currentUser = null; currentUserDoc = null;
+    }
+  });
+
+  // Check if any users exist — fail gracefully
+  try {
+    const usersSnap = await getDocs(collection(db,'users'));
+    if(usersSnap.empty) showOverlay('setup');
+  } catch(e){
+    console.warn('Users check failed:', e.message);
+    // If we can't check, show setup anyway — first write will tell us if rules are wrong
+    showOverlay('setup');
+  }
+}
+
+// ── LOADING ──────────────────────────────────────────────
+function showLoading(msg){
+  const s = document.getElementById('loadingScreen');
+  document.getElementById('loadingMsg').textContent = msg||'Loading...';
+  s.style.display='flex';
+}
+function hideLoading(){ document.getElementById('loadingScreen').style.display='none'; }
+
+// ── OVERLAY ──────────────────────────────────────────────
+function showOverlay(mode){
+  const ov = document.getElementById('overlayScreen');
+  ov.style.display='flex';
+  document.getElementById('setupWizard').style.display = mode==='setup'?'block':'none';
+  document.getElementById('loginBox').style.display = mode==='login'?'block':'none';
+  if(mode==='login'){ document.getElementById('l-email').value=''; document.getElementById('l-pass').value=''; document.getElementById('loginErr').style.display='none'; }
+}
+function hideOverlay(){ document.getElementById('overlayScreen').style.display='none'; }
+window.hideOverlay = hideOverlay;
+
+// ── SETUP ────────────────────────────────────────────────
+function setupStep1Next(){
+  const name=document.getElementById('s-name').value.trim();
+  const email=document.getElementById('s-email').value.trim();
+  const err=document.getElementById('setupErr1');
+  if(!name||!email){err.textContent='Please fill in all fields.';err.style.display='block';return;}
+  if(!email.includes('@')){err.textContent='Enter a valid email.';err.style.display='block';return;}
+  err.style.display='none';
+  document.getElementById('setupStep1').style.display='none';
+  document.getElementById('setupStep2').style.display='block';
+}
+window.setupStep1Next = setupStep1Next;
+
+async function setupFinish(){
+  const name=document.getElementById('s-name').value.trim();
+  const email=document.getElementById('s-email').value.trim();
+  const p=document.getElementById('s-pass').value;
+  const p2=document.getElementById('s-pass2').value;
+  const err=document.getElementById('setupErr2');
+  if(p.length<8){err.textContent='Password must be at least 8 characters.';err.style.display='block';return;}
+  if(p!==p2){err.textContent='Passwords do not match.';err.style.display='block';return;}
+  err.style.display='none';
+  showLoading('Creating account...');
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, p);
+    const userDoc = { name, email, role:'owner', createdAt: new Date().toISOString() };
+    await setDoc(doc(db,'users',cred.user.uid), userDoc);
+    currentUser = { uid: cred.user.uid, ...userDoc };
+    currentUserDoc = userDoc;
+    hideLoading(); hideOverlay(); openAdminPanel();
+  } catch(e) {
+    hideLoading();
+    err.textContent = e.message; err.style.display='block';
+  }
+}
+window.setupFinish = setupFinish;
+
+// ── LOGIN ────────────────────────────────────────────────
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const err=document.getElementById('loginErr');
+  showLoading('Signing in...');
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const uSnap = await getDoc(doc(db,'users', cred.user.uid));
+    if(!uSnap.exists()) throw new Error('User record not found.');
+    currentUserDoc = uSnap.data();
+    currentUser = { uid: cred.user.uid, email: cred.user.email, ...currentUserDoc };
+    hideLoading(); hideOverlay(); openAdminPanel();
+  } catch(e) {
+    hideLoading();
+    err.textContent = 'Incorrect email or password.'; err.style.display='block';
+  }
+}
+window.doLogin = doLogin;
+
+async function doLogout(){
+  await signOut(auth);
+  currentUser=null; currentUserDoc=null;
+  closeAdminPanel(); showToast('Signed out.');
+}
+window.doLogout = doLogout;
+
+// ── ADMIN ─────────────────────────────────────────────────
+function handleAdminClick(){
+  if(currentUser) openAdminPanel();
+  else showOverlay('login');
+}
+window.handleAdminClick = handleAdminClick;
+
+function openAdminPanel(){
+  if(!currentUser){showOverlay('login');return;}
+  document.getElementById('ukraineStripe').style.display='none';
+  document.getElementById('siteFooter').style.display='none';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('adminPanel').style.display='block';
+  document.getElementById('adminUserName').textContent=currentUser.name;
+  const rb=document.getElementById('adminRoleBadge');
+  rb.textContent=currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  rb.className='admin-role-badge role-'+currentUser.role;
+  populateAdminFields();
+  applyRoleRestrictions();
+  switchTab('event');
+}
+window.openAdminPanel = openAdminPanel;
+
+function closeAdminPanel(){
+  document.getElementById('adminPanel').style.display='none';
+  document.getElementById('ukraineStripe').style.display='';
+  document.getElementById('siteFooter').style.display='';
+  document.getElementById('page-home').classList.add('active');
+}
+window.closeAdminPanel = closeAdminPanel;
+
+function switchTab(name){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
+  const tab=document.getElementById('tab-'+name);
+  const sec=document.getElementById('section-'+name);
+  if(tab&&!tab.disabled)tab.classList.add('active');
+  if(sec)sec.classList.add('active');
+}
+window.switchTab = switchTab;
+
+function applyRoleRestrictions(){
+  if(currentUser.role==='manager'){
+    ['text','photos','contact','faq','security'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el){el.disabled=true;}});
+  } else if(currentUser.role==='admin'){
+    const el=document.getElementById('tab-security');
+    if(el){el.disabled=true;}
+    const ib=document.getElementById('inviteBox');if(ib)ib.style.display='none';
+  }
+}
+
+function setUnsaved(v){
+  const el=document.getElementById('saveStatus');
+  if(v){el.textContent='Unsaved changes!';el.className='save-status unsaved';}
+  else{el.textContent='All changes saved.';el.className='save-status saved';}
+}
+
+// ── POPULATE ─────────────────────────────────────────────
+function populateAdminFields(){
+  const g=id=>document.getElementById(id);
+  g('a-eventName').value=cfg.eventName||'';g('a-eventYear').value=cfg.eventYear||'';
+  g('a-eventDate').value=cfg.eventDate||'';g('a-eventTime').value=cfg.eventTime||'';
+  g('a-eventLocation').value=cfg.eventLocation||'';g('a-raceDistances').value=cfg.raceDistances||'';
+  g('a-regDeadline').value=cfg.registrationDeadline||'';g('a-heroBg').value=cfg.heroBgPhoto||'';
+  if(cfg.heroBgPhoto){const t=g('heroBgThumb');if(t)t.outerHTML=`<img id="heroBgThumb" class="photo-thumb" src="${cfg.heroBgPhoto}">`;}
+  g('a-tagline').value=cfg.tagline||'';g('a-shortDesc').value=cfg.shortDescription||'';
+  g('a-aboutPR').value=cfg.aboutPierogiRun||'';g('a-ruMission').value=cfg.ruMission||'';
+  g('a-contactEmail').value=cfg.contactEmail||'';g('a-ruEmail').value=cfg.regenerateUkraineContact||'';
+  g('a-ruAddress').value=cfg.regenerateUkraineAddress||'';g('a-runsignupURL').value=cfg.runSignupURL||'';
+  g('a-runsignupBtn').value=cfg.runSignupButtonText||'';g('a-ruURL').value=cfg.regenerateUkraineURL||'';
+  g('a-ruLogo').value=cfg.ruLogoURL||'';
+  g('a-facebook').value=(cfg.social&&cfg.social.facebook)||'';g('a-instagram').value=(cfg.social&&cfg.social.instagram)||'';
+  g('a-copyrightYear').value=cfg.copyrightYear||'';
+  g('a-myName').value=currentUser.name||'';g('a-myEmail').value=currentUser.email||'';
+  renderImpactAdmin();renderInitiativesAdmin();renderFaqAdmin();renderPhotoAdmin();renderMembersList();
+  setUnsaved(false);
+  document.querySelectorAll('#adminPanel .admin-input').forEach(el=>el.addEventListener('input',()=>setUnsaved(true)));
+}
+
+// ── STORAGE UPLOAD ───────────────────────────────────────
+async function uploadToStorage(input, pathKey, thumbId, inputId){
+  const file = input.files[0]; if(!file) return;
+  const ext = file.name.split('.').pop();
+  const path = `uploads/${pathKey}_${Date.now()}.${ext}`;
+  const inp = document.getElementById(inputId);
+  if(inp) inp.value='Uploading...';
+  try {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    if(inp){ inp.value=url; }
+    const t = document.getElementById(thumbId);
+    if(t) t.outerHTML=`<img id="${thumbId}" class="photo-thumb" src="${url}">`;
+    if(pathKey==='heroBg') cfg.heroBgPhoto=url;
+    setUnsaved(true);
+    showToast('✓ Photo uploaded','success');
+    return url;
+  } catch(e){
+    if(inp) inp.value='';
+    showToast('Upload failed: '+e.message,'error');
+    return null;
+  }
+}
+window.uploadToStorage = uploadToStorage;
+
+async function uploadPhotoToGallery(input, yr, i, thumbId, urlInputId){
+  const file = input.files[0]; if(!file) return;
+  const ext = file.name.split('.').pop();
+  const path = `gallery/${yr}_${Date.now()}.${ext}`;
+  const inp = document.getElementById(urlInputId);
+  if(inp) inp.value='Uploading...';
+  try {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    if(!cfg.photos[yr]) cfg.photos[yr]=[];
+    cfg.photos[yr][i].src = url;
+    if(inp) inp.value=url;
+    const t = document.getElementById(thumbId);
+    if(t) t.outerHTML=`<img id="${thumbId}" class="photo-thumb" src="${url}">`;
+    setUnsaved(true);
+    showToast('✓ Photo uploaded','success');
+  } catch(e){ showToast('Upload failed: '+e.message,'error'); }
+}
+
+async function uploadPreviewPhoto(input, i, thumbId, urlInputId){
+  const file = input.files[0]; if(!file) return;
+  const ext = file.name.split('.').pop();
+  const path = `preview/prev_${i}_${Date.now()}.${ext}`;
+  const inp = document.getElementById(urlInputId);
+  if(inp) inp.value='Uploading...';
+  try {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    if(!cfg.previewPhotos) cfg.previewPhotos=[];
+    while(cfg.previewPhotos.length<5) cfg.previewPhotos.push({src:''});
+    cfg.previewPhotos[i].src = url;
+    if(inp) inp.value=url;
+    const t = document.getElementById(thumbId);
+    if(t) t.outerHTML=`<img id="${thumbId}" class="photo-thumb" src="${url}">`;
+    setUnsaved(true);
+    showToast('✓ Photo uploaded','success');
+  } catch(e){ showToast('Upload failed: '+e.message,'error'); }
+}
+
+// ── IMPACT ───────────────────────────────────────────────
+function renderImpactAdmin(){
+  const list=document.getElementById('impactAdminList');list.innerHTML='';
+  (cfg.impact||[]).forEach((item,i)=>{
+    const row=document.createElement('div');row.className='impact-row';
+    row.innerHTML=`<input class="admin-input" value="${esc(item.number)}" placeholder="500+" oninput="cfg.impact[${i}].number=this.value;setUnsaved(true)"><input class="admin-input" value="${esc(item.label)}" placeholder="Label" oninput="cfg.impact[${i}].label=this.value;setUnsaved(true)"><button class="btn-sm btn-sm-red" onclick="cfg.impact.splice(${i},1);renderImpactAdmin();setUnsaved(true)">✕</button>`;
+    list.appendChild(row);
+  });
+}
+window.renderImpactAdmin=renderImpactAdmin;
+function addImpactItem(){if(!cfg.impact)cfg.impact=[];cfg.impact.push({number:"0",label:"New Stat"});renderImpactAdmin();setUnsaved(true);}
+window.addImpactItem=addImpactItem;
+
+// ── INITIATIVES ──────────────────────────────────────────
+function renderInitiativesAdmin(){
+  const list=document.getElementById('initiativesAdminList');list.innerHTML='';
+  (cfg.ruInitiatives||[]).forEach((item,i)=>{
+    const div=document.createElement('div');div.className='faq-admin-item';
+    div.innerHTML=`<button class="faq-remove" onclick="cfg.ruInitiatives.splice(${i},1);renderInitiativesAdmin();setUnsaved(true)">✕</button><div class="admin-grid-2" style="margin-bottom:8px;"><div class="admin-field" style="margin-bottom:0;"><label class="admin-label">Icon</label><input class="admin-input" value="${esc(item.icon)}" oninput="cfg.ruInitiatives[${i}].icon=this.value;setUnsaved(true)"></div><div class="admin-field" style="margin-bottom:0;"><label class="admin-label">Title</label><input class="admin-input" value="${esc(item.title)}" oninput="cfg.ruInitiatives[${i}].title=this.value;setUnsaved(true)"></div></div><div class="admin-field" style="margin-bottom:0;"><label class="admin-label">Description</label><textarea class="admin-input" style="min-height:60px;" oninput="cfg.ruInitiatives[${i}].body=this.value;setUnsaved(true)">${esc(item.body)}</textarea></div>`;
+    list.appendChild(div);
+  });
+}
+window.renderInitiativesAdmin=renderInitiativesAdmin;
+function addInitiative(){if(!cfg.ruInitiatives)cfg.ruInitiatives=[];cfg.ruInitiatives.push({icon:"⭐",title:"New Initiative",body:"Description."});renderInitiativesAdmin();setUnsaved(true);}
+window.addInitiative=addInitiative;
+
+// ── FAQ ──────────────────────────────────────────────────
+function renderFaqAdmin(){
+  const list=document.getElementById('faqAdminList');list.innerHTML='';
+  (cfg.faq||[]).forEach((item,i)=>{
+    const div=document.createElement('div');div.className='faq-admin-item';
+    div.innerHTML=`<button class="faq-remove" onclick="cfg.faq.splice(${i},1);renderFaqAdmin();setUnsaved(true)">✕</button><div class="admin-field"><label class="admin-label">Question</label><input class="admin-input" value="${esc(item.q)}" oninput="cfg.faq[${i}].q=this.value;setUnsaved(true)"></div><div class="admin-field" style="margin-bottom:0;"><label class="admin-label">Answer</label><textarea class="admin-input" oninput="cfg.faq[${i}].a=this.value;setUnsaved(true)">${esc(item.a)}</textarea></div>`;
+    list.appendChild(div);
+  });
+}
+window.renderFaqAdmin=renderFaqAdmin;
+function addFaqItem(){if(!cfg.faq)cfg.faq=[];cfg.faq.push({q:"New Question",a:"Answer."});renderFaqAdmin();setUnsaved(true);}
+window.addFaqItem=addFaqItem;
+
+// ── PHOTOS ───────────────────────────────────────────────
+function renderPhotoAdmin(){
+  const sec=document.getElementById('photoYearSections');sec.innerHTML='';
+  Object.keys(cfg.photos||{}).sort((a,b)=>b-a).forEach(yr=>{
+    const yrDiv=document.createElement('div');yrDiv.style='margin-bottom:28px;';
+    yrDiv.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;color:var(--yellow);">${yr}</span><button class="btn-sm btn-sm-ghost" onclick="addPhotoToYear('${yr}')">+ Add Photo</button><button class="btn-sm btn-sm-red" onclick="deleteYear('${yr}')">Remove Year</button></div><div id="yr-list-${yr}"></div>`;
+    sec.appendChild(yrDiv);
+    renderYearPhotos(yr);
+  });
+  const prev=document.getElementById('previewPhotoList');prev.innerHTML='';
+  if(!cfg.previewPhotos)cfg.previewPhotos=[];
+  while(cfg.previewPhotos.length<5)cfg.previewPhotos.push({src:''});
+  cfg.previewPhotos.slice(0,5).forEach((p,i)=>{
+    const thumbId='pt'+i; const urlId='pu'+i;
+    const row=document.createElement('div');row.className='photo-row';
+    row.innerHTML=`${p.src?`<img id="${thumbId}" class="photo-thumb" src="${esc(p.src)}">`:`<div id="${thumbId}" class="photo-thumb-empty">📸</div>`}<input id="${urlId}" class="admin-input" style="flex:1;" placeholder="Paste URL or upload →" value="${esc(p.src||'')}" oninput="cfg.previewPhotos[${i}].src=this.value;setUnsaved(true)"><label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadPreviewPhoto(this,${i},'${thumbId}','${urlId}')"></label>`;
+    prev.appendChild(row);
+  });
+}
+window.renderPhotoAdmin=renderPhotoAdmin;
+
+function renderYearPhotos(yr){
+  const list=document.getElementById('yr-list-'+yr);if(!list)return;list.innerHTML='';
+  (cfg.photos[yr]||[]).forEach((p,i)=>{
+    const thumbId=`yt_${yr}_${i}`; const urlId=`yu_${yr}_${i}`;
+    const row=document.createElement('div');row.className='photo-row';
+    row.innerHTML=`${p.src?`<img id="${thumbId}" class="photo-thumb" src="${esc(p.src)}">`:`<div id="${thumbId}" class="photo-thumb-empty">📸</div>`}<input id="${urlId}" class="admin-input" style="flex:1;" placeholder="Paste URL or upload →" value="${esc(p.src||'')}" oninput="cfg.photos['${yr}'][${i}].src=this.value;setUnsaved(true)"><label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadPhotoToGallery(this,'${yr}',${i},'${thumbId}','${urlId}')"></label><button class="btn-sm btn-sm-red" onclick="cfg.photos['${yr}'].splice(${i},1);renderYearPhotos('${yr}');setUnsaved(true)">✕</button>`;
+    list.appendChild(row);
+  });
+}
+window.renderYearPhotos=renderYearPhotos;
+window.uploadPhotoToGallery=uploadPhotoToGallery;
+window.uploadPreviewPhoto=uploadPreviewPhoto;
+
+function addPhotoToYear(yr){if(!cfg.photos[yr])cfg.photos[yr]=[];cfg.photos[yr].push({src:'',h:220});renderYearPhotos(yr);setUnsaved(true);}
+window.addPhotoToYear=addPhotoToYear;
+function deleteYear(yr){if(confirm(`Remove all ${yr} photos?`)){delete cfg.photos[yr];renderPhotoAdmin();setUnsaved(true);}}
+window.deleteYear=deleteYear;
+function addPhotoYear(){const yr=prompt('Enter year (e.g. 2026):');if(!yr||isNaN(yr))return;if(cfg.photos[yr]){alert('Year already exists.');return;}cfg.photos[yr]=[];renderPhotoAdmin();setUnsaved(true);}
+window.addPhotoYear=addPhotoYear;
+
+// ── MEMBERS ──────────────────────────────────────────────
+async function renderMembersList(){
+  const list=document.getElementById('membersList');list.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:0.82rem;">Loading members...</div>';
+  try {
+    const snap = await getDocs(collection(db,'users'));
+    list.innerHTML='';
+    snap.forEach(d=>{
+      const u={uid:d.id,...d.data()};
+      const isSelf=u.uid===currentUser.uid;
+      const canEdit=currentUser.role==='owner'&&!isSelf;
+      const row=document.createElement('div');row.className='member-row';
+      row.innerHTML=`<div class="member-info"><div class="member-name-text">${esc(u.name)} ${isSelf?'<span style="color:var(--yellow);font-size:0.7rem;">(you)</span>':''}</div><div class="member-email-text">${esc(u.email)}</div></div>${canEdit?`<select class="role-select" onchange="changeMemberRole('${u.uid}',this.value)"><option value="manager"${u.role==='manager'?' selected':''}>Manager</option><option value="admin"${u.role==='admin'?' selected':''}>Admin</option><option value="owner"${u.role==='owner'?' selected':''}>Owner</option></select><button class="btn-sm btn-sm-red" onclick="removeMember('${u.uid}')">Remove</button>`:`<span class="admin-role-badge role-${u.role}">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</span>`}`;
+      list.appendChild(row);
+    });
+  } catch(e){ list.innerHTML='<div style="color:var(--red);font-size:0.82rem;">Failed to load members.</div>'; }
+}
+window.renderMembersList=renderMembersList;
+
+async function changeMemberRole(uid,role){
+  await setDoc(doc(db,'users',uid),{role},{merge:true});
+  showToast('Role updated.','success');renderMembersList();
+}
+window.changeMemberRole=changeMemberRole;
+
+async function removeMember(uid){
+  if(!confirm('Remove this member? They will no longer be able to log in.'))return;
+  await deleteDoc(doc(db,'users',uid));
+  showToast('Member removed.');renderMembersList();
+}
+window.removeMember=removeMember;
+
+async function inviteMember(){
+  const name=document.getElementById('inv-name').value.trim();
+  const email=document.getElementById('inv-email').value.trim();
+  const role=document.getElementById('inv-role').value;
+  const pass=document.getElementById('inv-pass').value;
+  const err=document.getElementById('inviteErr');
+  if(!name||!email||!pass){err.textContent='All fields required.';err.style.display='block';return;}
+  if(pass.length<8){err.textContent='Password must be 8+ characters.';err.style.display='block';return;}
+  err.style.display='none';
+  showLoading('Creating account...');
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db,'users',cred.user.uid),{name,email,role,createdAt:new Date().toISOString()});
+    // Re-sign in as current user isn't displaced in this flow since createUserWithEmailAndPassword changes auth state
+    // Re-authenticate original user
+    hideLoading();
+    document.getElementById('inv-name').value='';document.getElementById('inv-email').value='';document.getElementById('inv-pass').value='';
+    renderMembersList();showToast('✓ '+name+' added as '+role+'.','success');
+  } catch(e){
+    hideLoading();
+    err.textContent=e.message;err.style.display='block';
+  }
+}
+window.inviteMember=inviteMember;
+
+async function saveMyAccount(){
+  const name=document.getElementById('a-myName').value.trim();
+  const email=document.getElementById('a-myEmail').value.trim();
+  const p=document.getElementById('a-myPass').value;
+  const p2=document.getElementById('a-myPass2').value;
+  const msg=document.getElementById('myAccountMsg');
+  if(!name||!email){msg.textContent='Name and email required.';msg.style.color='var(--red)';msg.style.display='block';return;}
+  if(p&&p.length<8){msg.textContent='Password must be 8+ characters.';msg.style.color='var(--red)';msg.style.display='block';return;}
+  if(p&&p!==p2){msg.textContent='Passwords do not match.';msg.style.color='var(--red)';msg.style.display='block';return;}
+  showLoading('Saving...');
+  try {
+    const u = auth.currentUser;
+    if(email!==u.email) await updateEmail(u, email);
+    if(p) await updatePassword(u, p);
+    await setDoc(doc(db,'users',u.uid),{name,email},{merge:true});
+    currentUser.name=name;currentUser.email=email;
+    document.getElementById('adminUserName').textContent=name;
+    document.getElementById('a-myPass').value='';document.getElementById('a-myPass2').value='';
+    hideLoading();msg.textContent='Account updated!';msg.style.color='var(--green)';msg.style.display='block';
+    showToast('✓ Account saved','success');
+  } catch(e){
+    hideLoading();msg.textContent=e.message;msg.style.color='var(--red)';msg.style.display='block';
+  }
+}
+window.saveMyAccount=saveMyAccount;
+
+// ── SAVE ALL ─────────────────────────────────────────────
+async function saveAll(){
+  const g=id=>document.getElementById(id).value.trim();
+  cfg.eventName=g('a-eventName');cfg.eventYear=g('a-eventYear');
+  cfg.eventDate=g('a-eventDate');cfg.eventTime=g('a-eventTime');
+  cfg.eventLocation=g('a-eventLocation');cfg.raceDistances=g('a-raceDistances');
+  cfg.registrationDeadline=g('a-regDeadline');
+  const hbVal=g('a-heroBg');if(hbVal&&hbVal!=='Uploading...')cfg.heroBgPhoto=hbVal;
+  cfg.tagline=g('a-tagline');cfg.shortDescription=g('a-shortDesc');
+  cfg.aboutPierogiRun=g('a-aboutPR');cfg.ruMission=g('a-ruMission');
+  cfg.contactEmail=g('a-contactEmail');cfg.regenerateUkraineContact=g('a-ruEmail');
+  cfg.regenerateUkraineAddress=g('a-ruAddress');
+  cfg.runSignupURL=g('a-runsignupURL');cfg.runSignupButtonText=g('a-runsignupBtn');
+  cfg.regenerateUkraineURL=g('a-ruURL');
+  const rlVal=g('a-ruLogo');if(rlVal)cfg.ruLogoURL=rlVal;
+  cfg.social={facebook:g('a-facebook'),instagram:g('a-instagram')};
+  cfg.copyrightYear=g('a-copyrightYear');
+  showLoading('Saving to Firebase...');
+  try {
+    await setDoc(doc(db,'site','config'), cfg);
+    hideLoading();setUnsaved(false);
+    renderPublicSite();showToast('✓ All changes saved','success');
+  } catch(e){
+    hideLoading();showToast('Save failed: '+e.message,'error');
+  }
+}
+window.saveAll=saveAll;
+
+// ── RENDER PUBLIC ─────────────────────────────────────────
+function renderPublicSite(){
+  const c=cfg;
+  const dist=(c.raceDistances||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const hb=document.getElementById('heroBgImg');
+  if(c.heroBgPhoto){hb.src=c.heroBgPhoto;hb.style.display='block';}else{hb.style.display='none';}
+  T('hero-tagline',c.tagline);T('hero-date',c.eventDate);T('hero-location',c.eventLocation);T('hero-distances',dist.join(' · '));
+  T('strip-date',c.eventDate);T('strip-time',c.eventTime);T('strip-location',c.eventLocation);T('strip-distances',dist.join(' & '));T('strip-deadline',c.registrationDeadline);
+  T('home-short-desc',c.shortDescription);A('home-ru-logo','src',c.ruLogoURL);
+  T('reg-title',(c.eventName||'')+' '+(c.eventYear||''));T('reg-date',c.eventDate);T('reg-location',c.eventLocation);T('reg-distances',dist.join(' & '));T('reg-deadline',c.registrationDeadline);
+  const rsBtn=document.getElementById('runsignup-btn');if(rsBtn){rsBtn.href=c.runSignupURL;rsBtn.textContent=(c.runSignupButtonText||'Register')+' →';}
+  const fl=document.getElementById('faqList');if(fl){fl.innerHTML='';(c.faq||[]).forEach(f=>{const d=document.createElement('div');d.className='faq-item';d.innerHTML=`<div class="faq-q">${esc(f.q)}<span class="toggle">+</span></div><div class="faq-a">${esc(f.a)}</div>`;d.querySelector('.faq-q').addEventListener('click',()=>{d.classList.toggle('open');d.querySelector('.toggle').textContent=d.classList.contains('open')?'−':'+';});fl.appendChild(d);});}
+  const gc=document.getElementById('galleryContent');if(gc){gc.innerHTML='';Object.keys(c.photos||{}).sort((a,b)=>b-a).forEach(yr=>{const sec=document.createElement('div');sec.className='gallery-year-section';sec.innerHTML=`<div class="gallery-year-header"><span class="year-badge">${yr}</span><div class="year-line"></div></div><div class="masonry-grid" id="mg-${yr}"></div>`;gc.appendChild(sec);const grid=document.getElementById('mg-'+yr);(c.photos[yr]||[]).forEach((p,i)=>{const item=document.createElement('div');item.className='masonry-item';if(p.src){item.innerHTML=`<img src="${esc(p.src)}" alt="Pierogi Run ${yr}" loading="lazy">`;item.addEventListener('click',()=>openLightbox(p.src));}else{item.innerHTML=`<div class="masonry-placeholder" style="height:${p.h||200}px"><span style="font-size:1.8rem;opacity:0.12">📸</span></div>`;}grid.appendChild(item);});});}
+  T('about-pr-text',c.aboutPierogiRun);T('about-ru-mission',c.ruMission);A('about-ru-link','href',c.regenerateUkraineURL);A('about-ru-logo-large','src',c.ruLogoURL);A('about-ru-logo-footer','src',c.ruLogoURL);T('about-ru-address',c.regenerateUkraineAddress);
+  const ig2=document.getElementById('initiativesGrid');if(ig2){ig2.innerHTML='';(c.ruInitiatives||[]).forEach(item=>{const d=document.createElement('div');d.className='initiative-card';d.innerHTML=`<div class="initiative-icon">${item.icon}</div><div class="initiative-title">${esc(item.title)}</div><div class="initiative-body">${esc(item.body)}</div>`;ig2.appendChild(d);});}
+  const ig=document.getElementById('impactGrid');if(ig){ig.innerHTML='';(c.impact||[]).forEach(item=>{const d=document.createElement('div');d.className='impact-card';d.innerHTML=`<div class="impact-number">${esc(item.number)}</div><div class="impact-label">${esc(item.label)}</div>`;ig.appendChild(d);});}
+  const sg=document.getElementById('shopGrid');if(sg){sg.innerHTML='';SHOP_ITEMS.forEach(item=>{const d=document.createElement('div');d.className='shop-card';d.innerHTML=`<div class="shop-card-img">${item.emoji}</div><div class="shop-card-body"><div class="shop-card-name">${item.name}</div><div class="shop-card-price">${item.price}</div><span class="shop-card-tag">Coming Soon</span></div>`;sg.appendChild(d);});}
+  const hpg=document.getElementById('homePhotoGrid');if(hpg){hpg.innerHTML='';(c.previewPhotos||[]).slice(0,5).forEach((p,i)=>{const d=document.createElement('div');d.className='grid-item';if(p&&p.src){d.innerHTML=`<img src="${esc(p.src)}" alt="Pierogi Run">`;d.addEventListener('click',()=>showPage('gallery'));}else{d.innerHTML=`<div class="photo-placeholder"><span class="photo-placeholder-icon">📸</span><span class="photo-placeholder-label">Photo ${i+1}</span></div>`;}hpg.appendChild(d);});}
+  T('footer-date',c.eventDate);T('footer-location',c.eventLocation);
+  const fe=document.getElementById('footer-email');if(fe){fe.href='mailto:'+c.contactEmail;fe.textContent=c.contactEmail;}
+  const re=document.getElementById('footer-ru-email');if(re){re.href='mailto:'+c.regenerateUkraineContact;re.textContent=c.regenerateUkraineContact;}
+  T('footer-ru-address',c.regenerateUkraineAddress);A('footer-ru-badge','href',c.regenerateUkraineURL);A('footer-ru-logo','src',c.ruLogoURL);A('footer-ru-link2','href',c.regenerateUkraineURL);
+  T('footer-copyright','© '+(c.copyrightYear||new Date().getFullYear())+' Pierogi Run / Regenerate Ukraine. All rights reserved.');
+  const fs=document.getElementById('footerSocial');if(fs&&c.social){fs.innerHTML=`<a class="social-btn" href="${c.social.facebook||'#'}" target="_blank" title="Facebook">f</a><a class="social-btn" href="${c.social.instagram||'#'}" target="_blank" title="Instagram">✦</a>`;}
+}
+window.renderPublicSite=renderPublicSite;
+
+// ── BOOT ─────────────────────────────────────────────────
+const HARDCODED_FC = {
+  apiKey: "AIzaSyCtSFjCadE0LDSGy1SK-HHZvNqfFgTkc8Q",
+  authDomain: "regenerate-ukraine-pierogi-run.firebaseapp.com",
+  projectId: "regenerate-ukraine-pierogi-run",
+  storageBucket: "regenerate-ukraine-pierogi-run.firebasestorage.app",
+  messagingSenderId: "216754479708",
+  appId: "1:216754479708:web:03a081a13f277d3b5b3c99"
+};
+document.getElementById('firebaseConfigScreen').style.display='none';
+initFirebase(HARDCODED_FC);
+
+// ── HELPERS (global) ─────────────────────────────────────
+function showPage(name){
+  document.getElementById('adminPanel').style.display='none';
+  document.getElementById('ukraineStripe').style.display='';
+  document.getElementById('siteFooter').style.display='';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  const pg=document.getElementById('page-'+name);if(pg)pg.classList.add('active');
+  const n=document.getElementById('nav-'+name);if(n)n.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.showPage=showPage;
+function toggleMobileMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
+window.toggleMobileMenu=toggleMobileMenu;
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');document.body.style.overflow='hidden';}
+window.openLightbox=openLightbox;
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';}
+window.closeLightbox=closeLightbox;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+function T(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'';}
+function A(id,attr,val){const el=document.getElementById(id);if(el)el[attr]=val||'';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(type?' '+type:'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
+window.showToast=showToast;
+window.setUnsaved=setUnsaved;
+</script>
+</body>
+</html>
