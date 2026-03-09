@@ -726,6 +726,7 @@ const DEFAULTS={
   ],
   photos:{},
   previewPhotos:[{src:""},{src:""},{src:""},{src:""},{src:""}],
+  homeFeaturePhoto:"",aboutPRPhoto:"",aboutRUPhoto:"",
   copyrightYear:"2025"
 };
 const SHOP_ITEMS=[{name:"Race Tee",emoji:"👕",price:"$28"},{name:"Hoodie",emoji:"🧥",price:"$58"},{name:"Sticker Pack",emoji:"⭐",price:"$8"},{name:"Finisher Medal",emoji:"🏅",price:"$15"}];
@@ -766,12 +767,10 @@ async function initFirebase(fc){
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
-    // expose to window for admin functions
     window._fb = { auth, db, storage, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateEmail, updatePassword, doc, getDoc, setDoc, collection, getDocs, deleteDoc, ref, uploadBytes, getDownloadURL, deleteObject };
     await bootApp();
   } catch(e) {
     hideLoading();
-    // Only show config screen for invalid config errors, not permissions
     if(e.message && (e.message.includes('invalid-api-key') || e.message.includes('app/invalid'))) {
       document.getElementById('firebaseConfigScreen').style.display='flex';
       const err = document.getElementById('fcErr');
@@ -787,7 +786,6 @@ async function initFirebase(fc){
 
 async function bootApp(){
   showLoading('Loading site...');
-  // Load config from Firestore — fail gracefully
   try {
     const snap = await getDoc(doc(db,'site','config'));
     if(snap.exists()) cfg = {...DEFAULTS, ...snap.data()};
@@ -799,7 +797,6 @@ async function bootApp(){
   renderPublicSite();
   hideLoading();
 
-  // Auth state listener — restore session if user was previously logged in
   onAuthStateChanged(auth, async user => {
     if(user){
       try {
@@ -813,7 +810,6 @@ async function bootApp(){
       currentUser = null; currentUserDoc = null;
     }
   });
-  // Never show setup on load — only triggered via admin button
 }
 
 // ── LOADING ──────────────────────────────────────────────
@@ -902,7 +898,6 @@ window.doLogout = doLogout;
 // ── ADMIN ─────────────────────────────────────────────────
 async function handleAdminClick(){
   if(currentUser){ openAdminPanel(); return; }
-  // Check Firestore — only show setup if truly no users exist
   showLoading('Checking...');
   try {
     const usersSnap = await getDocs(collection(db,'users'));
@@ -983,6 +978,13 @@ function populateAdminFields(){
   g('a-facebook').value=(cfg.social&&cfg.social.facebook)||'';g('a-instagram').value=(cfg.social&&cfg.social.instagram)||'';
   g('a-copyrightYear').value=cfg.copyrightYear||'';
   g('a-myName').value=currentUser.name||'';g('a-myEmail').value=currentUser.email||'';
+  // Populate feature photo fields
+  const hfu=g('homeFeatureUrl'); if(hfu) hfu.value=cfg.homeFeaturePhoto||'';
+  if(cfg.homeFeaturePhoto){const t=g('homeFeatureThumb');if(t)t.outerHTML=`<img id="homeFeatureThumb" class="photo-thumb" src="${cfg.homeFeaturePhoto}">`;}
+  const apru=g('aboutPRUrl'); if(apru) apru.value=cfg.aboutPRPhoto||'';
+  if(cfg.aboutPRPhoto){const t=g('aboutPRThumb');if(t)t.outerHTML=`<img id="aboutPRThumb" class="photo-thumb" src="${cfg.aboutPRPhoto}">`;}
+  const aruu=g('aboutRUUrl'); if(aruu) aruu.value=cfg.aboutRUPhoto||'';
+  if(cfg.aboutRUPhoto){const t=g('aboutRUThumb');if(t)t.outerHTML=`<img id="aboutRUThumb" class="photo-thumb" src="${cfg.aboutRUPhoto}">`;}
   renderImpactAdmin();renderInitiativesAdmin();renderFaqAdmin();renderPhotoAdmin();renderMembersList();
   setUnsaved(false);
   document.querySelectorAll('#adminPanel .admin-input').forEach(el=>el.addEventListener('input',()=>setUnsaved(true)));
@@ -1013,6 +1015,33 @@ async function uploadToStorage(input, pathKey, thumbId, inputId){
   }
 }
 window.uploadToStorage = uploadToStorage;
+
+// ── FEATURE PHOTO UPLOAD (was missing — this is the fix) ──
+async function uploadFeaturePhoto(input, key, thumbId, inputId){
+  const file = input.files[0]; if(!file) return;
+  const ext = file.name.split('.').pop();
+  const path = `feature/${key}_${Date.now()}.${ext}`;
+  const inp = document.getElementById(inputId);
+  if(inp) inp.value='Uploading...';
+  try {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    if(inp) inp.value=url;
+    const t = document.getElementById(thumbId);
+    if(t) t.outerHTML=`<img id="${thumbId}" class="photo-thumb" src="${url}">`;
+    // Save to the correct cfg key
+    if(key==='homeFeature') cfg.homeFeaturePhoto=url;
+    else if(key==='aboutPR') cfg.aboutPRPhoto=url;
+    else if(key==='aboutRU') cfg.aboutRUPhoto=url;
+    setUnsaved(true);
+    showToast('✓ Photo uploaded','success');
+  } catch(e){
+    if(inp) inp.value='';
+    showToast('Upload failed: '+e.message,'error');
+  }
+}
+window.uploadFeaturePhoto = uploadFeaturePhoto;
 
 async function uploadPhotoToGallery(input, yr, i, thumbId, urlInputId){
   const file = input.files[0]; if(!file) return;
@@ -1179,8 +1208,6 @@ async function inviteMember(){
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await setDoc(doc(db,'users',cred.user.uid),{name,email,role,createdAt:new Date().toISOString()});
-    // Re-sign in as current user isn't displaced in this flow since createUserWithEmailAndPassword changes auth state
-    // Re-authenticate original user
     hideLoading();
     document.getElementById('inv-name').value='';document.getElementById('inv-email').value='';document.getElementById('inv-pass').value='';
     renderMembersList();showToast('✓ '+name+' added as '+role+'.','success');
@@ -1234,6 +1261,10 @@ async function saveAll(){
   const rlVal=g('a-ruLogo');if(rlVal)cfg.ruLogoURL=rlVal;
   cfg.social={facebook:g('a-facebook'),instagram:g('a-instagram')};
   cfg.copyrightYear=g('a-copyrightYear');
+  // Collect feature photo URL fields (in case user typed rather than uploaded)
+  const hfv=g('homeFeatureUrl');if(hfv&&hfv!=='Uploading...')cfg.homeFeaturePhoto=hfv;
+  const apv=g('aboutPRUrl');if(apv&&apv!=='Uploading...')cfg.aboutPRPhoto=apv;
+  const arv=g('aboutRUUrl');if(arv&&arv!=='Uploading...')cfg.aboutRUPhoto=arv;
   showLoading('Saving to Firebase...');
   try {
     await setDoc(doc(db,'site','config'), cfg);
@@ -1251,6 +1282,23 @@ function renderPublicSite(){
   const dist=(c.raceDistances||'').split(',').map(x=>x.trim()).filter(Boolean);
   const hb=document.getElementById('heroBgImg');
   if(c.heroBgPhoto){hb.src=c.heroBgPhoto;hb.style.display='block';}else{hb.style.display='none';}
+
+  // Feature photos on public pages
+  const homeAboutImg=document.querySelector('.home-about-img');
+  if(homeAboutImg){
+    if(c.homeFeaturePhoto){homeAboutImg.innerHTML=`<img src="${esc(c.homeFeaturePhoto)}" alt="Race photo" style="width:100%;height:100%;object-fit:cover;">`;}
+    else{homeAboutImg.innerHTML=`<div class="photo-placeholder"><span class="photo-placeholder-icon">📸</span><span class="photo-placeholder-label">Race photo</span></div>`;}
+  }
+  const aboutImgs=document.querySelectorAll('.about-img');
+  if(aboutImgs[0]){
+    if(c.aboutPRPhoto){aboutImgs[0].innerHTML=`<img src="${esc(c.aboutPRPhoto)}" alt="Pierogi Run" style="width:100%;height:100%;object-fit:cover;">`;}
+    else{aboutImgs[0].innerHTML=`<div class="photo-placeholder" style="height:100%;min-height:320px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;"><span class="photo-placeholder-icon">📸</span></div>`;}
+  }
+  if(aboutImgs[1]){
+    if(c.aboutRUPhoto){aboutImgs[1].innerHTML=`<img src="${esc(c.aboutRUPhoto)}" alt="Regenerate Ukraine" style="width:100%;height:100%;object-fit:cover;">`;}
+    else{aboutImgs[1].innerHTML=`<div class="photo-placeholder" style="height:100%;min-height:320px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;"><img id="about-ru-logo-large" src="${esc(c.ruLogoURL||'')}" alt="" style="max-height:80px;width:auto;opacity:0.7;" onerror="this.style.display='none'"></div>`;}
+  }
+
   T('hero-tagline',c.tagline);T('hero-date',c.eventDate);T('hero-location',c.eventLocation);T('hero-distances',dist.join(' · '));
   T('strip-date',c.eventDate);T('strip-time',c.eventTime);T('strip-location',c.eventLocation);T('strip-distances',dist.join(' & '));T('strip-deadline',c.registrationDeadline);
   T('home-short-desc',c.shortDescription);A('home-ru-logo','src',c.ruLogoURL);
@@ -1258,7 +1306,8 @@ function renderPublicSite(){
   const rsBtn=document.getElementById('runsignup-btn');if(rsBtn){rsBtn.href=c.runSignupURL;rsBtn.textContent=(c.runSignupButtonText||'Register')+' →';}
   const fl=document.getElementById('faqList');if(fl){fl.innerHTML='';(c.faq||[]).forEach(f=>{const d=document.createElement('div');d.className='faq-item';d.innerHTML=`<div class="faq-q">${esc(f.q)}<span class="toggle">+</span></div><div class="faq-a">${esc(f.a)}</div>`;d.querySelector('.faq-q').addEventListener('click',()=>{d.classList.toggle('open');d.querySelector('.toggle').textContent=d.classList.contains('open')?'−':'+';});fl.appendChild(d);});}
   const gc=document.getElementById('galleryContent');if(gc){gc.innerHTML='';Object.keys(c.photos||{}).sort((a,b)=>b-a).forEach(yr=>{const sec=document.createElement('div');sec.className='gallery-year-section';sec.innerHTML=`<div class="gallery-year-header"><span class="year-badge">${yr}</span><div class="year-line"></div></div><div class="masonry-grid" id="mg-${yr}"></div>`;gc.appendChild(sec);const grid=document.getElementById('mg-'+yr);(c.photos[yr]||[]).forEach((p,i)=>{const item=document.createElement('div');item.className='masonry-item';if(p.src){item.innerHTML=`<img src="${esc(p.src)}" alt="Pierogi Run ${yr}" loading="lazy">`;item.addEventListener('click',()=>openLightbox(p.src));}else{item.innerHTML=`<div class="masonry-placeholder" style="height:${p.h||200}px"><span style="font-size:1.8rem;opacity:0.12">📸</span></div>`;}grid.appendChild(item);});});}
-  T('about-pr-text',c.aboutPierogiRun);T('about-ru-mission',c.ruMission);A('about-ru-link','href',c.regenerateUkraineURL);A('about-ru-logo-large','src',c.ruLogoURL);A('about-ru-logo-footer','src',c.ruLogoURL);T('about-ru-address',c.regenerateUkraineAddress);
+  T('about-pr-text',c.aboutPierogiRun);T('about-ru-mission',c.ruMission);A('about-ru-link','href',c.regenerateUkraineURL);
+  T('about-ru-address',c.regenerateUkraineAddress);A('about-ru-logo-footer','src',c.ruLogoURL);
   const ig2=document.getElementById('initiativesGrid');if(ig2){ig2.innerHTML='';(c.ruInitiatives||[]).forEach(item=>{const d=document.createElement('div');d.className='initiative-card';d.innerHTML=`<div class="initiative-icon">${item.icon}</div><div class="initiative-title">${esc(item.title)}</div><div class="initiative-body">${esc(item.body)}</div>`;ig2.appendChild(d);});}
   const ig=document.getElementById('impactGrid');if(ig){ig.innerHTML='';(c.impact||[]).forEach(item=>{const d=document.createElement('div');d.className='impact-card';d.innerHTML=`<div class="impact-number">${esc(item.number)}</div><div class="impact-label">${esc(item.label)}</div>`;ig.appendChild(d);});}
   const sg=document.getElementById('shopGrid');if(sg){sg.innerHTML='';SHOP_ITEMS.forEach(item=>{const d=document.createElement('div');d.className='shop-card';d.innerHTML=`<div class="shop-card-img">${item.emoji}</div><div class="shop-card-body"><div class="shop-card-name">${item.name}</div><div class="shop-card-price">${item.price}</div><span class="shop-card-tag">Coming Soon</span></div>`;sg.appendChild(d);});}
