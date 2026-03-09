@@ -771,7 +771,7 @@ async function bootApp(){
   renderPublicSite();
   hideLoading();
 
-  // Auth state listener
+  // Auth state listener — restore session if user was previously logged in
   onAuthStateChanged(auth, async user => {
     if(user){
       try {
@@ -785,16 +785,7 @@ async function bootApp(){
       currentUser = null; currentUserDoc = null;
     }
   });
-
-  // Check if any users exist — fail gracefully
-  try {
-    const usersSnap = await getDocs(collection(db,'users'));
-    if(usersSnap.empty) showOverlay('setup');
-  } catch(e){
-    console.warn('Users check failed:', e.message);
-    // If we can't check, show setup anyway — first write will tell us if rules are wrong
-    showOverlay('setup');
-  }
+  // Never show setup on load — only triggered via admin button
 }
 
 // ── LOADING ──────────────────────────────────────────────
@@ -881,9 +872,19 @@ async function doLogout(){
 window.doLogout = doLogout;
 
 // ── ADMIN ─────────────────────────────────────────────────
-function handleAdminClick(){
-  if(currentUser) openAdminPanel();
-  else showOverlay('login');
+async function handleAdminClick(){
+  if(currentUser){ openAdminPanel(); return; }
+  // Check Firestore — only show setup if truly no users exist
+  showLoading('Checking...');
+  try {
+    const usersSnap = await getDocs(collection(db,'users'));
+    hideLoading();
+    if(usersSnap.empty) showOverlay('setup');
+    else showOverlay('login');
+  } catch(e){
+    hideLoading();
+    showOverlay('login');
+  }
 }
 window.handleAdminClick = handleAdminClick;
 
