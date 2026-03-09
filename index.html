@@ -582,6 +582,34 @@ textarea.admin-input{min-height:90px;resize:vertical;line-height:1.6;}
         <div id="photoYearSections"></div>
         <button class="btn-sm btn-sm-ghost" onclick="addPhotoYear()" style="margin-top:12px;">+ Add Year</button>
       </div>
+      <div class="admin-card">
+        <h3>Feature Photos</h3>
+        <p style="font-size:0.82rem;color:rgba(255,255,255,0.35);margin-bottom:20px;line-height:1.6;">These appear as the large feature images on the Home and About pages.</p>
+        <div class="admin-field">
+          <label class="admin-label">Home Page — "More Than a Race" photo</label>
+          <div class="photo-row">
+            <div id="homeFeatureThumb" class="photo-thumb-empty">📸</div>
+            <input id="homeFeatureUrl" class="admin-input" style="flex:1;" placeholder="Paste URL or upload →" oninput="cfg.homeFeaturePhoto=this.value;setUnsaved(true)">
+            <label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadFeaturePhoto(this,'homeFeature','homeFeatureThumb','homeFeatureUrl')"></label>
+          </div>
+        </div>
+        <div class="admin-field">
+          <label class="admin-label">About Page — "What is Pierogi Run?" photo</label>
+          <div class="photo-row">
+            <div id="aboutPRThumb" class="photo-thumb-empty">📸</div>
+            <input id="aboutPRUrl" class="admin-input" style="flex:1;" placeholder="Paste URL or upload →" oninput="cfg.aboutPRPhoto=this.value;setUnsaved(true)">
+            <label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadFeaturePhoto(this,'aboutPR','aboutPRThumb','aboutPRUrl')"></label>
+          </div>
+        </div>
+        <div class="admin-field">
+          <label class="admin-label">About Page — "Regenerate Ukraine" photo</label>
+          <div class="photo-row">
+            <div id="aboutRUThumb" class="photo-thumb-empty">📸</div>
+            <input id="aboutRUUrl" class="admin-input" style="flex:1;" placeholder="Paste URL or upload →" oninput="cfg.aboutRUPhoto=this.value;setUnsaved(true)">
+            <label class="upload-label">📁 Upload<input type="file" accept="image/*" onchange="uploadFeaturePhoto(this,'aboutRU','aboutRUThumb','aboutRUUrl')"></label>
+          </div>
+        </div>
+      </div>
       <div class="admin-card"><h3>Home Preview Photos (up to 5)</h3><div id="previewPhotoList"></div></div>
     </div>
 
